@@ -1,0 +1,624 @@
+<!doctype html>
+<!-- ReviewMe — documentation canonique. Design system doc-style de Joey. Created by Orka. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReviewMe — Documentation</title>
+<style>
+:root {
+  --bg: #FAF4F0; --card: #FFFFFF; --ink: #111111; --muted: #55504C;
+  --accent: #AE7AFF; --accent2: #FF8ACD; --ok: #8FE388; --warn: #FFDB58;
+  --ko: #FF6B6B; --info: #87CEEB; --mut-bg: #E8E0DA; --code-bg: #F3EAE4; --hair: #DDD3CC;
+  --border: 2px solid #111111; --shadow: 4px 4px 0 #111111; --shadow-sm: 3px 3px 0 #111111;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); margin: 0;
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg);
+  padding: 1px 5px; border-radius: 2px; white-space: nowrap; }
+pre { font-family: var(--mono); font-size: 12.5px; line-height: 1.55; background: var(--code-bg);
+  border: var(--border); border-radius: 2px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+pre code { background: none; padding: 0; white-space: pre; }
+.wrap { display: flex; min-height: 100vh; }
+nav { width: 250px; flex: 0 0 250px; border-right: var(--border);
+  padding: 24px 16px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+nav .brand { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--accent2); border: var(--border); box-shadow: var(--shadow-sm);
+  display: inline-block; padding: 4px 10px; border-radius: 2px; margin: 0 0 10px; }
+nav .sub { color: var(--muted); font-size: 11.5px; margin: 0 2px 18px; line-height: 1.45; }
+nav .grp { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); margin: 18px 2px 6px; }
+nav a { display: block; padding: 7px 10px; margin-bottom: 4px; border-radius: 2px;
+  color: var(--ink); text-decoration: none; font-size: 13.5px; font-weight: 700; border: 2px solid transparent; }
+nav a:hover { border: var(--border); background: var(--card); }
+nav a.on { background: var(--card); border: var(--border); box-shadow: var(--shadow-sm); font-weight: 800; }
+main { flex: 1; min-width: 0; padding: 32px 40px 80px; }
+.page { display: none; max-width: 1020px; margin: 0 auto; }
+.page:target { display: block; }
+.page.defaut { display: block; }
+.eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--accent); border: var(--border); box-shadow: var(--shadow-sm);
+  display: inline-block; padding: 3px 9px; border-radius: 2px; margin-bottom: 14px; }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 900; line-height: 1.12; margin: 0 0 6px;
+  letter-spacing: -0.02em; text-wrap: balance; }
+.tl { color: var(--muted); font-size: 14px; margin: 0 0 20px; max-width: 68ch; }
+h2 { font-size: 19px; font-weight: 900; margin: 32px 0 10px; letter-spacing: -0.01em; }
+p { max-width: 72ch; }
+.ess { background: var(--card); border: var(--border); box-shadow: var(--shadow);
+  border-radius: 4px; padding: 14px 18px; margin: 0 0 8px; max-width: none; font-size: 14px; }
+.ess .chip { margin-right: 6px; }
+.chip { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+  padding: 2px 8px; border: 2px solid #111; border-radius: 2px; white-space: nowrap;
+  color: #111; vertical-align: 1px; text-transform: uppercase; }
+.c-ia { background: var(--accent); } .c-code { background: var(--warn); }
+.c-toi { background: #111; color: #fff; } .c-ok { background: var(--ok); }
+.c-ko { background: var(--ko); } .c-info { background: var(--info); } .c-mut { background: var(--mut-bg); }
+.card { background: var(--card); border: var(--border); box-shadow: var(--shadow); border-radius: 4px; margin: 8px 0 4px; }
+.twrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th { text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; padding: 10px 12px; border-bottom: var(--border); background: var(--code-bg); }
+td { padding: 9px 12px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; font-weight: 700; }
+td.wrap-first:first-child { white-space: normal; }
+.warnbox, .tipbox { background: var(--card); border: var(--border); box-shadow: var(--shadow-sm);
+  border-radius: 4px; padding: 12px 16px; margin: 12px 0; max-width: none; font-size: 13.5px; }
+.warnbox .chip, .tipbox .chip { margin-right: 8px; }
+.flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; margin: 14px 0; }
+.st { border: var(--border); box-shadow: var(--shadow-sm); border-radius: 4px;
+  padding: 10px 14px; font-size: 13px; max-width: 220px; background: var(--card); }
+.st b { display: block; font-size: 13.5px; font-weight: 900; margin-bottom: 2px; }
+.st.g { background: var(--accent); } .st.d { background: var(--warn); } .st.t { background: var(--card); }
+.ar { align-self: center; font-weight: 900; font-size: 16px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 14px 0; }
+.col { background: var(--card); border: var(--border); box-shadow: var(--shadow); border-radius: 4px; padding: 14px 16px; min-width: 0; }
+.col h3 { margin: 0 0 8px; font-size: 14px; font-weight: 900; }
+.col ul { margin: 0; padding-left: 18px; font-size: 13px; } .col li { margin-bottom: 5px; }
+.col.g { background: var(--accent); } .col.d { background: var(--warn); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 14px 0; }
+.stat { background: var(--card); border: var(--border); box-shadow: var(--shadow-sm); border-radius: 4px; padding: 14px 16px; }
+.stat b { display: block; font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.foot { color: var(--muted); font-size: 12.5px; border-top: var(--border); padding-top: 14px; margin-top: 40px; }
+@media (max-width: 900px) {
+  .wrap { flex-direction: column; }
+  nav { width: auto; flex: none; height: auto; position: static; display: flex; flex-wrap: wrap;
+    gap: 4px; padding: 14px; border-right: none; border-bottom: var(--border); align-items: center; }
+  nav .brand { margin: 0 8px 0 0; } nav .sub, nav .grp { display: none; }
+  nav a { font-size: 12.5px; padding: 5px 9px; margin: 0; }
+  main { padding: 22px 18px 60px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="menu">
+  <p class="brand">ReviewMe · doc</p>
+  <p class="sub">Bot de code review IA<br>reviewers multiples · v0.3</p>
+  <a href="#overview" class="on">Vue d'ensemble</a>
+  <div class="grp">Prise en main</div>
+  <a href="#install">Installation</a>
+  <a href="#config">Configuration</a>
+  <a href="#usage">Usage</a>
+  <div class="grp">Comprendre</div>
+  <a href="#fonctionnement">Fonctionnement</a>
+  <a href="#reviewers">Reviewers &amp; projets</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#entrees">Points d'entrée</a>
+  <div class="grp">Exploiter</div>
+  <a href="#deploiement">Déploiement</a>
+  <a href="#securite">Sécurité</a>
+  <a href="#statut">Statut &amp; limites</a>
+</nav>
+<main>
+
+<!-- ═══════════ VUE D'ENSEMBLE ═══════════ -->
+<section class="page defaut" id="overview">
+  <span class="eyebrow">Documentation</span>
+  <h1>ReviewMe</h1>
+  <p class="tl">Bot de code review par IA : de vrais commentaires inline ligne-par-ligne, un cycle de vie de threads, et plusieurs points d'entrée configurables.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> ReviewMe fait reviewer une PR par <code>claude -p</code>, qui produit des <b>findings structurés</b> ; ReviewMe les <b>ancre en commentaires inline</b> sur les bonnes lignes, <b>dédup</b> d'un run à l'autre, et <b>répond dans les threads</b> quand le code évolue. Il se lance en <b>CLI, webhook, poll ou CI</b>. Plusieurs <b>reviewers spécialisés</b> peuvent tourner en parallèle sur une même PR.</p>
+
+  <h2>Le pipeline</h2>
+  <div class="flow">
+    <div class="st t"><b>PR GitHub</b>CLI / webhook / poll / CI</div><div class="ar">→</div>
+    <div class="st g"><b>claude -p</b>findings JSON</div><div class="ar">→</div>
+    <div class="st d"><b>Validation diff</b>anti-422</div><div class="ar">→</div>
+    <div class="st d"><b>Réconciliateur</b>dédup + inline + réponses</div><div class="ar">→</div>
+    <div class="st t"><b>Commentaires</b>inline sur la PR</div>
+  </div>
+  <p class="legend"><span><span class="chip c-toi">Humain</span> l'événement PR</span>
+  <span><span class="chip c-ia">IA</span> le moteur de review</span>
+  <span><span class="chip c-code">Code</span> déterministe (ReviewMe)</span></p>
+
+  <h2>Ce qu'il sait faire</h2>
+  <div class="card twrap"><table>
+    <tr><th>Capacité</th><th>Comportement</th></tr>
+    <tr><td class="wrap-first">Commentaires</td><td><span class="chip c-ok">Inline ligne-par-ligne</span>, ancrés sur les lignes réellement modifiées, plus un summary</td></tr>
+    <tr><td class="wrap-first">Re-review</td><td>Dédup par fingerprint ancré sur le contenu : un commit qui décale les lignes ne crée aucun doublon</td></tr>
+    <tr><td class="wrap-first">Threads</td><td>Répond dans le thread existant quand le code d'une ligne commentée évolue</td></tr>
+    <tr><td class="wrap-first">Reviewers</td><td>Plusieurs relecteurs spécialisés en parallèle, activés par projet et déclenchés par le diff</td></tr>
+    <tr><td class="wrap-first">Entrées</td><td>CLI · webhook · poll · CI (GitHub Actions, Bitrise)</td></tr>
+    <tr><td class="wrap-first">Sortie du moteur</td><td>Findings JSON structurés ; repli en commentaire global si le JSON est illisible</td></tr>
+    <tr><td class="wrap-first">Identité</td><td>PAT, ou GitHub App dédiée (<code>&lt;slug&gt;[bot]</code>) avec token renouvelé</td></tr>
+  </table></div>
+
+  <div class="tipbox"><span class="chip c-ok">Ordre de grandeur</span> Une review coûte <b>0,5 à 2,4 $</b> et dure <b>1 à 8 minutes</b> selon la taille du diff — le coût suit la taille du diff, pas le nombre de reviewers. Toujours calibrer en <code>--dry-run</code> avant de brancher sur un vrai dépôt.</div>
+</section>
+
+<!-- ═══════════ INSTALLATION ═══════════ -->
+<section class="page" id="install">
+  <span class="eyebrow">Prise en main</span>
+  <h1>Installation</h1>
+  <p class="tl">Le moteur d'un côté, votre configuration de l'autre. Trois façons de les relier.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Le <b>moteur</b> est un dépôt, votre <b>instance</b> (projets, personas, <code>.env</code>) en est un autre. En local on garde deux clones ; en CI l'instance monte le moteur en submodule et un seul clone suffit. Pour un seul dépôt à reviewer sans reviewers spécialisés, le <b>mode simple</b> se passe d'instance.</p>
+
+  <h2>Prérequis</h2>
+  <div class="card twrap"><table>
+    <tr><th>Outil</th><th>Rôle</th></tr>
+    <tr><td>Python ≥ 3.13</td><td>Runtime</td></tr>
+    <tr><td>uv</td><td>Dépendances et exécution (<code>curl -LsSf https://astral.sh/uv/install.sh | sh</code>)</td></tr>
+    <tr><td>CLI <code>claude</code></td><td>Moteur de review (<code>npm install -g @anthropic-ai/claude-code</code>)</td></tr>
+    <tr><td>Token GitHub</td><td>PAT fine-grained <b>Pull requests : R/W</b>, ou une GitHub App</td></tr>
+    <tr><td>Clé Claude</td><td><code>ANTHROPIC_API_KEY</code> en session non interactive (VPS / CI)</td></tr>
+  </table></div>
+
+  <h2>1 · En local : deux clones</h2>
+  <pre><code>git clone &lt;moteur&gt; ~/dev/reviewMe &amp;&amp; cd ~/dev/reviewMe
+uv sync                                   # + `--extra github-app` pour l'auth GitHub App
+npm install -g @anthropic-ai/claude-code
+
+git clone &lt;instance&gt; ~/dev/mon-instance
+cd ~/dev/mon-instance
+cp .env.example .env                      # GITHUB_TOKEN, GITHUB_REPO, REPO_PATH
+
+./reviewme projects                       # le lanceur trouve le moteur tout seul
+PROJECT=mon-repo ./reviewme review --pr 42 --dry-run</code></pre>
+  <p>Le lanceur cherche le moteur dans <code>REVIEWME_CORE</code>, puis <code>./.core</code>, puis un clone voisin. S'il ne le trouve pas : <code>export REVIEWME_CORE=~/dev/reviewMe</code>.</p>
+
+  <h2>2 · En CI : un seul clone</h2>
+  <p>L'instance monte le moteur en submodule <code>.core</code> et <b>épingle sa version</b> — pas de moteur qui change sous les pieds entre deux builds.</p>
+  <pre><code># une fois, dans le dépôt d'instance
+git submodule add &lt;moteur&gt; .core &amp;&amp; git commit -m "add(core) - moteur épinglé"
+
+# en CI
+git clone --recurse-submodules &lt;instance&gt; config
+cd config &amp;&amp; ./reviewme review --pr "$PR_NUMBER"</code></pre>
+  <p>Aucune variable à poser, et sans <code>.venv</code> pré-construit le lanceur passe par <code>uv run</code> : <code>uv</code> est la seule dépendance à installer. Détails et exemple GitHub Actions : <a href="#reviewers">Reviewers &amp; projets</a>.</p>
+
+  <h2>3 · Sans instance : le mode simple</h2>
+  <p>Un seul dépôt à reviewer, un seul reviewer, pas de personas spécialisées : le moteur se suffit à lui-même.</p>
+  <pre><code>git clone &lt;moteur&gt; reviewme &amp;&amp; cd reviewme &amp;&amp; uv sync
+cp .env.example .env                      # sans PROJECT ni REVIEWME_CONFIG_HOME
+uv run reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code></pre>
+  <p>La persona vient alors de <code>config/prompts/system.md</code> et les règles de <code>config/guidelines/&lt;pack&gt;/</code>.</p>
+
+  <h2>Créer une instance depuis zéro</h2>
+  <pre><code>mkdir ~/dev/mon-instance &amp;&amp; cd ~/dev/mon-instance &amp;&amp; git init
+export REVIEWME_CONFIG_HOME=$PWD
+~/dev/reviewMe/.venv/bin/python -m reviewme.cli init-project mon-repo --reviewers tech,i18n</code></pre>
+  <p>Puis ajuster <code>common/*.md</code> (langue, ton), les personas dans <code>reviewers/&lt;id&gt;/system.md</code>, et déclarer les conventions à lire via <code>[context] read</code>. Copier le lanceur <code>reviewme</code> depuis une instance existante rend la commande directement disponible.</p>
+
+  <div class="warnbox"><span class="chip c-ko">Toujours commencer par là</span> Committer le <code>.gitignore</code> en <b>premier</b>, dans les deux dépôts : il protège <code>.env</code> (token) et <code>data/</code> (contenu de PR réelles). Ne jamais faire <code>git add -A</code> avant.</div>
+  <div class="tipbox"><span class="chip c-ok">Premier lancement</span> Toujours en <code>--dry-run</code> : tout est calculé, rien n'est posté. C'est ainsi qu'on calibre le seuil de confiance avant de brancher sur un vrai dépôt.</div>
+</section>
+
+<!-- ═══════════ CONFIGURATION ═══════════ -->
+<section class="page" id="config">
+  <span class="eyebrow">Prise en main</span>
+  <h1>Configuration</h1>
+  <p class="tl">Tout par <code>.env</code>. Personas et consignes sont des fichiers éditables sans toucher au code.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> La config vit dans <code>.env</code> (secrets par env uniquement). Le <b>comportement de review</b> se règle par les fichiers d'un projet (<code>reviewers/&lt;id&gt;/</code>, <code>common/</code>), sans toucher au code.</p>
+
+  <h2>Variables <code>.env</code></h2>
+  <div class="card twrap"><table>
+    <tr><th>Clé</th><th>Défaut</th><th>Rôle</th></tr>
+    <tr><td>GITHUB_TOKEN</td><td>—</td><td>PAT fine-grained (PR R/W). Jamais un classic <code>repo</code>.</td></tr>
+    <tr><td>GITHUB_REPO</td><td>—</td><td><code>OWNER/REPO</code> cible</td></tr>
+    <tr><td>REVIEW_LABEL</td><td><code>review-me</code></td><td>PR à reviewer (mode label)</td></tr>
+    <tr><td>REVIEW_ALL_PRS</td><td><code>false</code></td><td><code>true</code> = toute PR ouverte (ignore le label — attention au coût)</td></tr>
+    <tr><td>GUIDELINES_PACK</td><td><code>_default</code></td><td><i>Mode simple uniquement</i> — dossier <code>config/guidelines/&lt;pack&gt;</code>. Ignoré dès que <code>PROJECT</code> est défini.</td></tr>
+    <tr><td>REVIEWME_CONFIG_HOME</td><td><i>(vide)</i></td><td>Dépôt de config <b>externe</b> (ex. <code>~/dev/mon-instance</code>). Vide = <code>config/projects/</code> du repo.</td></tr>
+    <tr><td>PROJECT</td><td><i>(vide)</i></td><td>Dossier <code>&lt;projets&gt;/&lt;nom&gt;</code>. Vide = <b>mode simple</b> : un seul reviewer, prompts pris dans <code>config/prompts/</code>.</td></tr>
+    <tr><td>MAX_COMMENTS_PER_PR</td><td><code>10</code></td><td>Plafond de commentaires par PR, <b>tous reviewers confondus</b> (ADR v3 D6)</td></tr>
+    <tr><td>REVIEWER_ID</td><td><code>tech</code></td><td>Reviewer du <b>mode simple</b>, tel qu'il apparaît dans le marqueur de dédup. <b>Ne jamais renommer</b> sur un dépôt déjà commenté.</td></tr>
+    <tr><td>GITHUB_APP_ID</td><td>—</td><td>GitHub App : identité dédiée (<code>&lt;slug&gt;[bot]</code>) au lieu du PAT d'un humain</td></tr>
+    <tr><td>GITHUB_APP_PRIVATE_KEY_PATH</td><td>—</td><td>Chemin du <code>.pem</code> (jamais la clé en clair dans le <code>.env</code>)</td></tr>
+    <tr><td>GITHUB_APP_INSTALLATION_ID</td><td><i>(vide)</i></td><td>Optionnel — résolu depuis le repo cible si absent</td></tr>
+    <tr><td>JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN</td><td>—</td><td>Contexte ticket du reviewer <code>us</code>. Absents = reviewer skippé, jamais d'erreur.</td></tr>
+    <tr><td>JIRA_AC_FIELD</td><td><code>customfield_10037</code></td><td>Champ des critères d'acceptation (varie selon l'instance Jira)</td></tr>
+    <tr><td>CONFIDENCE_THRESHOLD</td><td><code>80</code></td><td>Findings sous ce seuil non postés</td></tr>
+    <tr><td>MAX_BUDGET_USD</td><td><code>1.00</code></td><td>Plafond de coût <b>par reviewer</b> (surchargeable dans son <code>reviewer.toml</code>)</td></tr>
+    <tr><td>CLAUDE_AGENT</td><td><i>(vide)</i></td><td>Vide = persona auto-suffisant (<code>config/prompts/system.md</code>)</td></tr>
+    <tr><td>CLAUDE_BIN</td><td><i>(vide)</i></td><td>Binaire de la CLI de review. Vide = <code>claude</code> du PATH ; sinon un wrapper compatible.</td></tr>
+    <tr><td>ANTHROPIC_BASE_URL</td><td>—</td><td>Passerelle interne (proxy compatible Anthropic). Héritée telle quelle par <code>claude -p</code>.</td></tr>
+    <tr><td>CLAUDE_MODEL</td><td><i>(vide)</i></td><td>Modèle explicite (sinon défaut CLI)</td></tr>
+    <tr><td>ANTHROPIC_API_KEY</td><td>—</td><td>Auth Claude en session non interactive (VPS/CI)</td></tr>
+    <tr><td>WEBHOOK_SECRET</td><td>—</td><td><b>Obligatoire</b> pour le webhook (HMAC) — fail-closed sinon</td></tr>
+    <tr><td>DRY_RUN</td><td><code>false</code></td><td><code>true</code> = ne poste rien, log seulement</td></tr>
+  </table></div>
+
+  <div class="warnbox"><span class="chip c-ko">Piège</span> Le <b>défaut du code</b> n'est pas la <b>valeur déployée</b>. Avant de diagnostiquer un comportement, lire le <code>.env</code> réel de l'instance — jamais les défauts de mémoire.</div>
+
+  <h2>Guidelines &amp; prompts</h2>
+  <p>Avec un <code>PROJECT</code>, tout vient du projet : la persona (<code>reviewers/&lt;id&gt;/system.md</code>), les consignes communes (<code>common/*.md</code>) et les conventions lues dans le dépôt reviewé (<code>[context] read</code>). Seul <code>config/output-contract.md</code> (le contrat JSON) reste imposé par le moteur — cf. <a href="#reviewers">Reviewers &amp; projets</a>.</p>
+  <p><b>Sans</b> <code>PROJECT</code>, le <b>mode simple</b> s'applique : un unique reviewer, avec <code>config/prompts/system.md</code> et le pack <code>config/guidelines/&lt;pack&gt;/</code>. Suffisant pour un seul dépôt sans besoin de reviewers spécialisés.</p>
+</section>
+
+<!-- ═══════════ USAGE ═══════════ -->
+<section class="page" id="usage">
+  <span class="eyebrow">Prise en main</span>
+  <h1>Usage</h1>
+  <p class="tl">Une brique commune (one-shot), quatre façons de la déclencher.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> <code>reviewme review --repo O/R --pr N</code> est la brique de base. Les autres modes ne font que l'appeler.</p>
+
+  <h2>Commandes</h2>
+  <div class="card twrap"><table>
+    <tr><th>Commande</th><th>Usage</th></tr>
+    <tr><td class="wrap-first"><code>reviewme review --repo O/R --pr N</code></td><td>Review one-shot d'une PR. <code>--dry-run</code> (ne poste rien), <code>--force</code> (re-review même commit).</td></tr>
+    <tr><td class="wrap-first"><code>reviewme-poll</code></td><td>Boucle de poll (mode VPS/legacy) — review les PR labellisées (ou toutes si <code>REVIEW_ALL_PRS</code>).</td></tr>
+    <tr><td class="wrap-first"><code>reviewme-webhook</code></td><td>Serveur webhook GitHub (HMAC). Reçoit les events <code>pull_request</code>.</td></tr>
+    <tr><td class="wrap-first"><code>reviewme-web [port]</code></td><td>Dashboard read-only (Hall of Fame, coûts) sur <code>127.0.0.1:8420</code>.</td></tr>
+    <tr><td class="wrap-first"><code>reviewme init-project &lt;repo&gt; --reviewers tech,us,i18n</code></td><td>Crée <code>config/projects/&lt;repo&gt;/</code> depuis le squelette (cf. Reviewers &amp; projets).</td></tr>
+    <tr><td class="wrap-first"><code>reviewme projects</code></td><td>Liste les projets configurés, leurs reviewers, leur mode et leur déclencheur.</td></tr>
+  </table></div>
+
+  <pre><code># Exemple typique en CI / cron
+ANTHROPIC_API_KEY=sk-ant-... GITHUB_TOKEN=github_pat_... \
+  uv run reviewme review --repo owner/repo --pr 1234</code></pre>
+</section>
+
+<!-- ═══════════ FONCTIONNEMENT ═══════════ -->
+<section class="page" id="fonctionnement">
+  <span class="eyebrow">Comprendre</span>
+  <h1>Fonctionnement</h1>
+  <p class="tl">Du diff au commentaire inline, en passant par la validation et la réconciliation.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Le moteur renvoie des findings JSON ; ReviewMe <b>valide chaque ligne contre le diff</b> (sinon 422), <b>dédup par un fingerprint stable</b>, poste tout en <b>un seul write</b>, et <b>répond dans les threads</b> quand une ligne a bougé.</p>
+
+  <h2>1 · Findings structurés</h2>
+  <p>Le moteur (<code>claude -p</code>, persona <code>config/prompts/system.md</code>) répond par un JSON : <code>summary</code> + liste de <code>findings</code> <code>{path, line, severity, message, snippet, confidence}</code>. Si le JSON est invalide, ReviewMe <b>retombe sur un commentaire global</b> plutôt que de crasher : la review est livrée, en moins bien, jamais perdue.</p>
+
+  <h2>2 · Validation anti-422</h2>
+  <p>GitHub valide une review de façon <b>atomique</b> : un seul commentaire sur une ligne hors-diff rejette TOUTE la review. <code>diff_utils</code> parse les patches (<code>GET /pulls/{n}/files</code>) et calcule les lignes réellement commentables. Les findings hors-diff sont <b>basculés dans le summary</b>, jamais postés en inline.</p>
+
+  <h2>3 · Fingerprint &amp; déduplication</h2>
+  <p>Chaque commentaire porte un marqueur invisible <code>&lt;!-- reviewme:REVIEWER:HASH --&gt;</code> où <code>HASH = sha1(path + contenu réel de la ligne)</code> — <b>indépendant du numéro de ligne</b> et du texte narré par le LLM, donc stable entre deux runs. On reconnaît nos commentaires par ce <b>marqueur</b>, jamais par l'auteur (sinon on toucherait les threads humains).</p>
+
+  <p>La clé de déduplication est le <b>couple</b> <code>(reviewer, hash)</code>. C'est ce qui permet à deux reviewers de commenter la même ligne sans que l'un fasse disparaître l'autre.</p>
+
+  <div class="tipbox"><span class="chip c-ok">Propriété clé</span> Le hash porte le <b>contenu de la ligne</b>, pas son numéro : un commit qui décale le code ne recrée aucun commentaire. Le <code>reviewer_id</code> est un préfixe du marqueur et n'entre pas dans le hash. Verrouillé par <code>tests/test_fingerprint_migration.py</code>.</div>
+
+  <div class="warnbox"><span class="chip c-ko">Piège</span> <code>REVIEWER_ID</code> doit rester <b>stable dans le temps</b> pour un projet donné : le renommer rend orphelins tous les commentaires déjà postés, qui seront alors <b>reposés en double</b>. Même règle que pour le hash.</div>
+
+  <h2>Changer de moteur LLM</h2>
+  <p>La review est produite par la CLI <code>claude</code>, lancée en sous-processus. Trois niveaux de personnalisation, du plus simple au plus lourd :</p>
+  <div class="card twrap"><table>
+    <tr><th>Besoin</th><th>Comment</th></tr>
+    <tr><td class="wrap-first"><b>Passerelle d'entreprise</b><br>(proxy compatible Anthropic)</td><td>Rien à coder : <code>ANTHROPIC_BASE_URL</code> et <code>ANTHROPIC_AUTH_TOKEN</code> dans le <code>.env</code> sont hérités par le sous-processus. Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code> si le proxy rejette les en-têtes de prompt caching.</td></tr>
+    <tr><td class="wrap-first"><b>Wrapper maison</b><br>(quotas, journalisation, auth)</td><td><code>CLAUDE_BIN=/chemin/wrapper</code>. Le wrapper doit accepter les mêmes arguments et produire la même enveloppe <code>--output-format json</code>.</td></tr>
+    <tr><td class="wrap-first"><b>Un autre modèle</b><br>via une API de complétion</td><td>Pas une question de configuration — voir l'avertissement ci-dessous.</td></tr>
+  </table></div>
+  <div class="warnbox"><span class="chip c-ko">Ce n'est pas qu'un endpoint</span> <code>claude -p</code> est un <b>agent</b> : il ouvre les fichiers du dépôt, cherche dedans, lit l'historique git pour contextualiser un finding. Une API de complétion classique ne fait rien de tout ça — tout devrait tenir dans un seul prompt. Basculer sur ce type de moteur, c'est un <b>backend à écrire</b> (assemblage du contexte, parsing, comptabilité du coût), pas une variable à poser.</div>
+
+  <h2>4 · Cycle de vie des threads</h2>
+  <div class="card twrap"><table>
+    <tr><th>Situation</th><th>Action</th></tr>
+    <tr><td class="wrap-first">Finding nouveau</td><td>Ajouté au batch inline</td></tr>
+    <tr><td class="wrap-first">Finding déjà posté, toujours valide</td><td><span class="chip c-mut">Dédup</span> — rien</td></tr>
+    <tr><td class="wrap-first">Finding persiste, commentaire devenu outdated (nouveau commit)</td><td><span class="chip c-ok">Réponse</span> dans le thread existant (pas de doublon)</td></tr>
+    <tr><td class="wrap-first">JSON moteur invalide</td><td>Fallback : commentaire global</td></tr>
+    <tr><td class="wrap-first">422 résiduel sur le batch</td><td>Repli : tout en commentaire global (rien perdu)</td></tr>
+  </table></div>
+  <p class="legend"><span>Le batch inline = <b>un seul</b> <code>POST /pulls/{n}/reviews</code> (respecte la limite de 80 créations/min).</span></p>
+</section>
+
+<!-- ═══════════ REVIEWERS ═══════════ -->
+<section class="page" id="reviewers">
+  <span class="eyebrow">Comprendre</span>
+  <h1>Reviewers &amp; projets</h1>
+  <p class="tl">Plusieurs relecteurs spécialisés, activés projet par projet.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Un <b>projet</b> = un dossier par repo, qui porte ses reviewers <b>complets</b> (persona incluse) et ses consignes communes. Chaque reviewer a son objectif, ses entrées et son format de sortie. Le projet <b>active</b> ceux qu'il veut ; le diff <b>déclenche</b> ceux qui le concernent.</p>
+
+  <h2>Pourquoi plusieurs reviewers</h2>
+  <p>Pas pour alléger un prompt trop gros : parce que les <b>entrées</b> et les <b>sorties</b> diffèrent. « AC3 non couvert » n'a aucune ligne de diff à pointer — c'est une absence, pas une erreur située. Un finding technique, si. Les deux ne peuvent pas partager un format de sortie.</p>
+
+  <div class="card twrap"><table>
+    <tr><th>Reviewer</th><th>Objectif</th><th>Entrées</th><th>Sortie</th><th>Déclenchement</th></tr>
+    <tr><td><code>tech</code></td><td>Archi, sécurité, perf, fiabilité, conventions</td><td>diff + conventions du repo</td><td><span class="chip c-code">inline</span></td><td>toute PR</td></tr>
+    <tr><td><code>us</code></td><td>Les critères d'acceptation sont-ils couverts ?</td><td>ticket Jira + diff</td><td><span class="chip c-info">global</span></td><td>clé de ticket détectée</td></tr>
+    <tr><td><code>i18n</code></td><td>Complétude et qualité des traductions</td><td>fichiers de locale + diff</td><td><span class="chip c-mut">mixte</span></td><td><code>when.paths</code></td></tr>
+  </table></div>
+  <p>Ce sont des <b>objectifs types</b> livrés dans <code>config/templates/</code>, pas des prompts partagés : chaque projet part du squelette puis écrit sa propre persona.</p>
+
+  <h2>Le modèle : le projet est l'unité</h2>
+  <pre><code>config/
+  output-contract.md          ← CORE : interface du parseur, aucun projet ne la redéfinit
+  projects/
+    ah-ios/
+      common/*.md             langue, ton, format — PAS les conventions de code
+      reviewers/              ← LA source de vérité : un dossier = un reviewer
+        tech/{reviewer.toml, system.md}
+        us/{reviewer.toml, system.md}
+        i18n/{reviewer.toml, system.md, precheck.py}
+    bff-api/
+      common/*.md
+      reviewers/{tech, us}/   ← une API n'a rien à traduire</code></pre>
+  <p>La présence du dossier suffit à activer le reviewer : il n'y a aucune liste à tenir à jour ailleurs. Pour en mettre un en sommeil sans supprimer son dossier : <code>enabled = false</code> dans son <code>reviewer.toml</code>.</p>
+  <p>Pas d'héritage entre projets : deux teams sur deux produits écrivent des personas réellement différentes, même pour un objectif identique. La duplication est le <b>prix assumé de leur indépendance</b> — bornée (une persona ≈ 45 lignes) et amorcée par <code>reviewme init-project</code>.</p>
+
+  <div class="tipbox"><span class="chip c-ok">Effet de bord utile</span> Tout le contenu propre à un projet (personas métier, consignes internes) vit dans <b>un seul dossier</b> — un seul chemin à exclure d'un dépôt public.</div>
+
+  <h2>Deux niveaux de sélection</h2>
+  <div class="flow">
+    <div class="st g">1 · Activation<br><small>le projet choisit ses reviewers</small></div>
+    <div class="ar">→</div>
+    <div class="st d">2 · Déclenchement<br><small>le diff décide qui tourne</small></div>
+    <div class="ar">→</div>
+    <div class="st t">3 · Exécution<br><small>en parallèle, écriture unique</small></div>
+  </div>
+  <p>Le niveau 2 n'est pas un confort. Sans lui, <b>chaque PR paie tous les reviewers activés</b> : à ~0,65-0,91 $ par reviewer, quatre reviewers systématiques coûtent ~3 $ la PR. <code>i18n</code> ne se déclenche que si le diff touche un fichier de localisation ; <code>us</code> que si une clé de ticket est détectée.</p>
+
+  <h2>Écriture unique et plafond</h2>
+  <p>Les reviewers s'exécutent <b>en parallèle</b> (chacun est un <code>claude -p</code> indépendant), mais l'écriture GitHub passe par <b>un seul point</b> : dédup partagée, limite de 80 créations/minute respectée, et surtout plafond de commentaires calculable — impossible à faire reviewer par reviewer.</p>
+
+  <div class="warnbox"><span class="chip c-ko">Le vrai risque</span> Quatre reviewers zélés = 15 commentaires = le développeur décroche et désactive le bot. <code>MAX_COMMENTS_PER_PR</code> (défaut 10) coupe <b>par PR, tous reviewers confondus</b>, en gardant les plus graves puis les plus sûrs. Le reste est journalisé, pas posté.</div>
+
+  <h2>Le déterministe avant le LLM</h2>
+  <p>Un reviewer peut déclarer un <code>precheck</code> : un script dont la sortie est injectée comme <b>faits établis</b>. « La clé <code>checkout.title</code> existe en <code>fr</code> et manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde ce qui demande du jugement : variables non substituées, pluriels, longueur, ton. Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
+
+  <h2>Les conventions ne se recopient pas</h2>
+  <p>Un projet documente déjà ses règles (<code>AGENTS.md</code>, <code>CONTRIBUTING.md</code>, <code>docs/</code>). En copier le contenu dans la config d'un reviewer crée une copie qui <b>diverge en silence</b> dès la première évolution du repo — et personne ne le voit, puisque le reviewer continue de citer d'anciennes règles avec assurance.</p>
+  <p>Un reviewer déclare donc <b>ce qu'il faut lire</b>, et le moteur le résout à chaque review :</p>
+  <pre><code># reviewer.toml
+[context]
+read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code></pre>
+  <div class="card twrap"><table>
+    <tr><th>Déclaré</th><th>Ce que fait le moteur</th></tr>
+    <tr><td>un <b>fichier</b></td><td>Injecte son contenu — toujours à jour, et l'agent ne peut pas « oublier » d'aller le lire</td></tr>
+    <tr><td>un <b>dossier</b></td><td>Injecte l'inventaire de ses <code>.md</code> ; l'agent ouvre ce qui concerne la PR</td></tr>
+    <tr><td>un chemin <b>absent</b></td><td><span class="chip c-ko">WARNING</span> explicite dans les logs</td></tr>
+    <tr><td>un chemin <b>hors du dépôt</b></td><td>Refusé (<code>../</code>, chemin absolu)</td></tr>
+  </table></div>
+  <div class="tipbox"><span class="chip c-ok">Le gain</span> Quand un fichier de conventions est renommé ou supprimé, le WARNING le signale au run suivant. Sans déclaration, le reviewer perdrait ses règles sans que personne ne s'en aperçoive — il continuerait de commenter, simplement moins bien.</div>
+  <p>Il reste donc dans <code>common/</code> uniquement ce qui <b>n'existe nulle part dans le repo</b> : langue, ton, longueur des remarques, faux positifs à ne jamais produire — commun à tous les reviewers du projet.</p>
+
+  <h2>Une instance = un dépôt de config</h2>
+  <p>Une organisation ne veut ni <b>forker le moteur</b> (il faudrait rebaser à chaque évolution), ni committer ses personas et consignes internes dans le dépôt du moteur. La config de projets vit donc dans <b>son propre dépôt</b>, relié par une seule variable :</p>
+  <pre><code>export REVIEWME_CONFIG_HOME=~/dev/mon-instance
+
+mon-instance/            ← dépôt privé, versionné à part, aucun code moteur
+  projects/
+    api/                   reviewers/tech/
+    webapp/                reviewers/{tech, i18n}/</code></pre>
+  <p>Le moteur n'étant pas dans ce dépôt, l'instance porte un lanceur <code>./reviewme</code> qui le localise et lui passe la main — plus son propre <code>.env</code>, qui <b>prime sur celui du moteur</b> (repo cible, token, seuils propres à l'instance) :</p>
+  <pre><code>./reviewme projects
+./reviewme review --pr 147 --dry-run
+
+# équivalent manuel, sans le lanceur :
+REVIEWME_CONFIG_HOME=~/dev/mon-instance \
+  ~/dev/reviewMe/.venv/bin/python -m reviewme.cli projects</code></pre>
+
+  <p>C'est délibérément <b>un chemin, pas un submodule git</b> : un submodule ramène exactement les frictions d'un fork (init, update, HEAD détachée, commit de pointeur à chaque changement) que ce découpage cherche à éviter. Deux dépôts indépendants ; le moteur reste <code>git pull</code>-able sans conflit.</p>
+  <div class="card twrap"><table>
+    <tr><th>Où</th><th>Quoi</th><th>Pourquoi</th></tr>
+    <tr><td>Moteur</td><td><code>config/output-contract.md</code></td><td>Interface du parseur — la redéfinir casse le parsing en silence</td></tr>
+    <tr><td>Moteur</td><td><code>config/templates/</code></td><td>Squelette copié par <code>init-project</code></td></tr>
+    <tr><td><b>Dépôt de config</b></td><td><code>projects/&lt;repo&gt;/reviewers/</code></td><td>Personas et consignes communes : propre à l'organisation</td></tr>
+    <tr><td><b>Dépôt reviewé</b></td><td><code>AGENTS.md</code>, <code>docs/</code>…</td><td>Les conventions de code — lues à la source, jamais recopiées</td></tr>
+  </table></div>
+
+  <h3>En CI : l'instance épingle le moteur</h3>
+  <p>En CI, on ne veut ni deux clones à synchroniser, ni un moteur qui change de version sous les pieds entre deux builds. L'instance monte alors le moteur en submodule <code>.core</code> : elle <b>épingle la version</b> qu'elle utilise, et un seul clone ramène tout.</p>
+  <pre><code># dans le dépôt d'instance, une fois
+git submodule add &lt;url-du-moteur&gt; .core
+
+# en CI
+git clone --recurse-submodules &lt;url-de-l-instance&gt; config
+cd config && ./reviewme review --pr "$PR_NUMBER"</code></pre>
+  <p>Le lanceur détecte <code>.core</code> seul — aucune variable à poser. Sans <code>.venv</code> pré-construit il passe par <code>uv run</code> : rien à installer d'autre que <code>uv</code>. Mettre à jour le moteur devient un geste explicite et daté : <code>git -C .core pull</code> puis commit du pointeur.</p>
+  <div class="tipbox"><span class="chip c-ok">Le sens du montage</span> C'est <b>l'instance qui épingle le moteur</b>, jamais l'inverse. Le moteur ne référence aucune instance, reste neutre, et peut être partagé ou publié — alors qu'un moteur qui monterait ses instances en submodules se salirait d'un commit de pointeur à chaque changement de persona.</div>
+
+  <h3>Agréger plusieurs dépôts de config</h3>
+  <p>Quand plusieurs équipes maintiennent chacune leur config, un dépôt <b>chapeau</b> peut les monter en submodules. Deux conditions :</p>
+  <div class="card twrap"><table>
+    <tr><th>Condition</th><th>Détail</th></tr>
+    <tr><td class="wrap-first">Un submodule = <b>un projet</b></td><td>Monté en <code>projects/&lt;repo&gt;</code>, avec <code>reviewers/</code> et <code>common/</code> à sa racine. Monter un dépôt qui contient lui-même un <code>projects/</code> ajoute un niveau : le moteur ne le trouve pas.</td></tr>
+    <tr><td class="wrap-first">Le chapeau n'est <b>jamais le moteur</b></td><td>Sinon le dépôt du moteur référence des dépôts privés et se salit d'un commit de pointeur à chaque changement de config — précisément ce que la séparation évite.</td></tr>
+  </table></div>
+  <p>Git refuse deux submodules au même chemin (<code>already exists in the index</code>), donc un doublon de projet est impossible par construction.</p>
+  <div class="warnbox"><span class="chip c-ko">Le coût réel</span> Un <code>git clone</code> sans <code>--recurse-submodules</code> donne des dossiers de projets <b>vides</b>, et un <code>git pull</code> ne les met pas à jour sans <code>git submodule update</code>. Le moteur détecte ce cas et le dit explicitement, mais c'est une friction permanente : ne prendre les submodules que si l'agrégation est un vrai besoin. Pour une seule instance, <code>REVIEWME_CONFIG_HOME</code> suffit.</div>
+
+  <h2>Créer un projet</h2>
+  <pre><code>reviewme init-project ah-ios --reviewers tech,us,i18n
+reviewme projects          # liste les projets et leurs reviewers
+
+# puis, dans .env :
+PROJECT=ah-ios</code></pre>
+  <p>Le dossier porte le nom du <b>repo</b>, jamais celui de l'équipe : une team renommée ou une app qui change de main ne doit rien casser.</p>
+
+  <div class="warnbox"><span class="chip c-ko">Piège</span> L'<code>id</code> d'un reviewer entre dans le marqueur de dédup. Le renommer sur un projet en cours rend orphelins tous ses commentaires déjà postés, qui seront <b>reposés en double</b>.</div>
+</section>
+
+<!-- ═══════════ ARCHITECTURE ═══════════ -->
+<section class="page" id="architecture">
+  <span class="eyebrow">Comprendre</span>
+  <h1>Architecture</h1>
+  <p class="tl">Un noyau unique, plat, config-driven. La logique de review et de posting vit dans le repo.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Layout plat, config-driven. Deux principes : (1) <b>un seul moteur</b> pour toutes les équipes, la config vit ailleurs ; (2) <b>toute la logique de posting est dans ce dépôt</b>, donc auditable — rien n'est caché dans un plugin externe.</p>
+
+  <h2>Modules</h2>
+  <div class="card twrap"><table>
+    <tr><th>Module</th><th>Rôle</th></tr>
+    <tr><td>config.py</td><td>Config <code>.env</code> + chemins</td></tr>
+    <tr><td>models.py</td><td><code>Finding</code>, <code>ReviewResult</code> + parsing robuste (fallback si JSON invalide)</td></tr>
+    <tr><td>diff_utils.py</td><td>Parseur de patch → positions inline valides (anti-422) + normalisation de ligne</td></tr>
+    <tr><td>reviewer.py</td><td>Invoque <code>claude -p</code> (allowlist verrouillée, sans <code>Write</code>) → findings</td></tr>
+    <tr><td>github_client.py</td><td>Client REST : diff, files, review inline (batch), replies, list, PR</td></tr>
+    <tr><td>reconciler.py</td><td>Fingerprint + dédup + validation + <code>prepare()</code> (sans écriture) / <code>post_all()</code> (écriture unique)</td></tr>
+    <tr><td>projects.py</td><td>Config par projet : chargement de <code>config/projects/&lt;repo&gt;/</code>, specs de reviewers, sélection</td></tr>
+    <tr><td>precheck.py</td><td>Exécute le script déterministe d'un reviewer (les faits avant le LLM)</td></tr>
+    <tr><td>repo_context.py</td><td>Lit les conventions <b>dans le dépôt reviewé</b> (<code>[context] read</code>) — jamais de copie</td></tr>
+    <tr><td>context/jira.py</td><td>Ticket + critères d'acceptation (optionnel — absent = reviewer <code>us</code> skippé)</td></tr>
+    <tr><td>github_auth.py</td><td>PAT ou <b>GitHub App</b> (JWT RS256 → token d'installation, renouvelé)</td></tr>
+    <tr><td>scrub.py</td><td>Caviarde secrets/chemins avant tout post</td></tr>
+    <tr><td>run.py</td><td><code>run_review()</code> — la fonction commune à toutes les entrées</td></tr>
+    <tr><td>state.py</td><td>Cache <code>last_reviewed_sha</code> (verrou <code>flock</code> inter-process)</td></tr>
+    <tr><td>cli.py / poll.py / webhook.py</td><td>Les points d'entrée</td></tr>
+    <tr><td>web/</td><td>Dashboard read-only (Hall of Fame)</td></tr>
+  </table></div>
+
+  <h2>Dossiers de données</h2>
+  <pre><code>config/    output-contract.md            (CORE — interface du parseur, non surchargeable)
+           projects/&lt;repo&gt;/              common/, reviewers/&lt;id&gt;/
+           templates/                    squelette copié par `reviewme init-project`
+           prompts/system.md, guidelines/{ios,_default}/   (mode simple, sans PROJECT)
+deploy/    github-actions/  bitrise-step.md  systemd/
+docs/      reviewme.html (cette doc)  archive/ (historique des décisions)
+data/      state.json  reviews/  reviews.log   (gitignoré — hors OSS)</code></pre>
+</section>
+
+<!-- ═══════════ POINTS D'ENTRÉE ═══════════ -->
+<section class="page" id="entrees">
+  <span class="eyebrow">Comprendre</span>
+  <h1>Points d'entrée</h1>
+  <p class="tl">La même brique <code>run_review()</code>, déclenchée de quatre façons.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Aucune logique de review dupliquée : chaque entrée résout une PR puis appelle <code>run_review()</code>. On choisit l'entrée selon le contexte de déploiement.</p>
+
+  <div class="cols">
+    <div class="col"><h3>CLI (one-shot)</h3><ul>
+      <li><code>reviewme review --repo --pr</code></li>
+      <li>La brique commune</li>
+      <li>Idéal : CI, cron, test manuel</li>
+    </ul></div>
+    <div class="col"><h3>Webhook</h3><ul>
+      <li>Event <code>pull_request</code> → review</li>
+      <li>HMAC obligatoire (fail-closed)</li>
+      <li>Idéal : VPS temps réel</li>
+    </ul></div>
+    <div class="col"><h3>Poll</h3><ul>
+      <li>Boucle sur PR labellisées / toutes</li>
+      <li>Aucune exposition entrante</li>
+      <li>Mode legacy / dev</li>
+    </ul></div>
+    <div class="col"><h3>CI</h3><ul>
+      <li>GitHub Actions ou Bitrise</li>
+      <li>Appelle le CLI one-shot</li>
+      <li>1 build = 1 review</li>
+    </ul></div>
+  </div>
+
+  <div class="tipbox"><span class="chip c-ok">Reco</span> Démarrer par le <b>CLI one-shot</b> (rien à exposer, valide toute la chaîne). Passer au <b>webhook</b> pour le temps réel une fois le VPS exposé proprement (TLS + HMAC).</div>
+</section>
+
+<!-- ═══════════ DÉPLOIEMENT ═══════════ -->
+<section class="page" id="deploiement">
+  <span class="eyebrow">Exploiter</span>
+  <h1>Déploiement</h1>
+  <p class="tl">VPS (webhook/poll), Bitrise, ou GitHub Actions.</p>
+  <p>Quelle que soit la cible, le déploiement clone <b>l'instance</b> (avec le moteur en submodule <code>.core</code>) et appelle son lanceur — cf. <a href="#install">Installation § En CI</a>.</p>
+  <div class="tipbox"><span class="chip c-ok">Runner Linux, même pour un projet iOS</span> La review <b>ne compile rien</b> : elle lit un diff et des fichiers texte, sans Xcode ni toolchain. Bitrise permet de surcharger le stack <b>par workflow</b> (<code>meta.bitrise.io.stack</code>), donc une app iOS peut avoir son workflow de review sur Linux — bien moins cher à la minute qu'un runner macOS. Exemple complet : <code>deploy/bitrise-step.md</code>.</div>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Recettes prêtes dans <code>deploy/</code>. Le point à trancher au déploiement reste l'<b>auth du moteur en session non interactive</b> : <code>ANTHROPIC_API_KEY</code>, ou une passerelle d'entreprise via <code>ANTHROPIC_BASE_URL</code>.</p>
+
+  <h2>Cibles</h2>
+  <div class="card twrap"><table>
+    <tr><th>Cible</th><th>Fichier</th><th>Modèle</th></tr>
+    <tr><td class="wrap-first">GitHub Actions</td><td><code>deploy/github-actions/reviewme.yml</code></td><td>Sur <code>pull_request</code> → CLI one-shot</td></tr>
+    <tr><td class="wrap-first">Bitrise</td><td><code>deploy/bitrise-step.md</code></td><td>Orchestration + CLI, déclenché via l'API Build Trigger</td></tr>
+    <tr><td class="wrap-first">VPS (webhook)</td><td><code>deploy/systemd/reviewme-webhook.service</code></td><td>Always-on, reverse-proxy TLS devant</td></tr>
+    <tr><td class="wrap-first">VPS (poll/cron)</td><td>—</td><td>Cron/timer appelant le CLI one-shot</td></tr>
+  </table></div>
+
+  <h2>Questions non tranchées</h2>
+  <div class="card twrap"><table>
+    <tr><th>Sujet</th><th>État</th></tr>
+    <tr><td class="wrap-first">Auth Claude en CI/VPS</td><td><span class="chip c-ko">Ouvert</span> <code>ANTHROPIC_API_KEY</code> (le plus simple pour démarrer) ou passerelle d'entreprise (<code>ANTHROPIC_BASE_URL</code>)</td></tr>
+    <tr><td class="wrap-first">Réseau sortant vers un LLM</td><td><span class="chip c-ko">À confirmer sécu</span> un proxy interne est envisageable</td></tr>
+    <tr><td class="wrap-first">Bitrise vs VPS seul</td><td><span class="chip c-mut">À trancher</span> dual-target maintenu ou VPS+webhook seul</td></tr>
+  </table></div>
+</section>
+
+<!-- ═══════════ SÉCURITÉ ═══════════ -->
+<section class="page" id="securite">
+  <span class="eyebrow">Exploiter</span>
+  <h1>Sécurité</h1>
+  <p class="tl">Le moteur lit du contenu de PR non fiable et poste sur des PR : modèle de menace explicite.</p>
+  <div class="ess"><span class="chip c-ko">À lire avant tout déploiement</span> Un auteur de PR est <b>non fiable</b>. Sans précautions, le diff peut pousser le moteur à écrire des fichiers (RCE) ou exfiltrer des secrets dans un commentaire public. Les garde-fous ci-dessous sont implémentés ; le <b>sandbox réseau reste à câbler au déploiement</b>.</p>
+
+  <h2>Garde-fous en place</h2>
+  <div class="card twrap"><table>
+    <tr><th>Menace</th><th>Mitigation (implémentée)</th></tr>
+    <tr><td class="wrap-first">Écriture arbitraire (injection → RCE)</td><td>Allowlist verrouillée <code>Read,Glob,Grep,Bash(git log/show/diff)</code> — <b>pas de <code>Write</code></b>, jamais <code>--dangerously-skip-permissions</code></td></tr>
+    <tr><td class="wrap-first">Exfiltration de secrets</td><td>Diff traité comme donnée non fiable ; <b>scrub</b> (tokens, clés, chemins absolus) sur tout texte avant post</td></tr>
+    <tr><td class="wrap-first">Webhook usurpé</td><td>HMAC <code>X-Hub-Signature-256</code> en temps constant, corps brut, <b>fail-closed</b> sans secret</td></tr>
+    <tr><td class="wrap-first">Token trop puissant</td><td>PAT fine-grained, 1 repo, PR R/W (pas de classic <code>repo</code>)</td></tr>
+    <tr><td class="wrap-first">Dashboard exposé</td><td>CORS <code>*</code> retiré, endpoint d'écriture <code>/api/requeue</code> supprimé, read-only <code>127.0.0.1</code></td></tr>
+    <tr><td class="wrap-first">Fuite de secrets/données</td><td><code>.gitignore</code> couvre <code>.env</code> et <code>data/</code></td></tr>
+  </table></div>
+
+  <div class="warnbox"><span class="chip c-ko">Reste à faire au déploiement</span> La mitigation n°1 de la prompt-injection — exécuter <code>claude -p</code> dans un <b>sandbox sans réseau sortant</b> (hors GitHub) et avec un <code>Read</code> confiné au clone cible — n'est pas gérable dans le code : à câbler au niveau infra (conteneur/systemd + firewall). Le scrub est la dernière barrière, pas la seule.</div>
+
+  <div class="tipbox"><span class="chip c-ok">Identité dédiée</span> Faire tourner le bot sous une <b>GitHub App</b> plutôt qu'un PAT humain : token court renouvelé automatiquement, permissions explicites, et les commentaires arrivent sous <code>&lt;slug&gt;[bot]</code> au lieu du compte d'une personne. Il suffit de renseigner <code>GITHUB_APP_ID</code> et <code>GITHUB_APP_PRIVATE_KEY_PATH</code>.</div>
+</section>
+
+<!-- ═══════════ STATUT ═══════════ -->
+<section class="page" id="statut">
+  <span class="eyebrow">Exploiter</span>
+  <h1>Statut &amp; limites</h1>
+  <p class="tl">Ce qui tourne, ce qui n'existe pas encore, et ce qu'il faut calibrer.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Le cœur est validé sur de vraies PR : commentaires inline ancrés aux bonnes lignes, aucun doublon après un commit qui décale le code, et plusieurs reviewers en parallèle sur un même diff. Restent deux réglages à faire à la main sur chaque dépôt : le <b>seuil de confiance</b> et le <b>plafond de coût</b>.</p>
+
+  <h2>Validé sur de vraies PR</h2>
+  <div class="card twrap"><table>
+    <tr><th>Vérification</th><th>Résultat</th></tr>
+    <tr><td class="wrap-first">Inline sur les bonnes lignes</td><td><span class="chip c-ok">OK</span> re-ancrage par le contenu quand le modèle se trompe de quelques lignes</td></tr>
+    <tr><td class="wrap-first">Dédup sur re-review</td><td><span class="chip c-ok">OK</span> même commit et commit suivant : zéro doublon</td></tr>
+    <tr><td class="wrap-first">Fan-out multi-reviewers</td><td><span class="chip c-ok">OK</span> deux reviewers en parallèle, une seule écriture GitHub</td></tr>
+    <tr><td class="wrap-first">Déclenchement par le diff</td><td><span class="chip c-ok">OK</span> un reviewer ne tourne que si la PR le concerne</td></tr>
+    <tr><td class="wrap-first">Conventions lues dans le dépôt</td><td><span class="chip c-ok">OK</span> et un chemin obsolète est signalé</td></tr>
+  </table></div>
+
+  <h2>À calibrer sur chaque dépôt</h2>
+  <div class="card twrap"><table>
+    <tr><th>Réglage</th><th>Pourquoi</th></tr>
+    <tr><td class="wrap-first"><code>CONFIDENCE_THRESHOLD</code></td><td>À 80, l'essentiel des findings est filtré sur du code déjà relu. Passer quelques PR en <code>--dry-run</code> et regarder ce qui aurait été posté avant de trancher.</td></tr>
+    <tr><td class="wrap-first"><code>MAX_BUDGET_USD</code></td><td>Le coût suit la <b>taille du diff</b> : un gros diff coûte plus cher qu'un reviewer de plus. Le plafond s'applique par reviewer.</td></tr>
+    <tr><td class="wrap-first"><code>MAX_COMMENTS_PER_PR</code></td><td>Le facteur d'abandon d'un bot de review est le bruit, pas le manque de findings.</td></tr>
+  </table></div>
+
+  <h2>Ce qui n'existe pas</h2>
+  <div class="card twrap"><table>
+    <tr><th>Absent</th><th>Conséquence pratique</th></tr>
+    <tr><td class="wrap-first">Sandbox de déploiement</td><td>À câbler à l'infra (pas de réseau sortant, FS confiné). C'est la mitigation de fond contre la prompt injection — cf. <a href="#securite">Sécurité</a>.</td></tr>
+    <tr><td class="wrap-first"><code>REQUEST_CHANGES</code> bloquant</td><td>Le bot ne pose que des <code>COMMENT</code>. Exige une GitHub App comme identité.</td></tr>
+    <tr><td class="wrap-first">Resolve / unresolve des threads</td><td>GitHub replie déjà les commentaires devenus obsolètes.</td></tr>
+    <tr><td class="wrap-first">Commentaires multi-lignes et suggestions</td><td>Un finding s'ancre sur une seule ligne, côté droit du diff.</td></tr>
+    <tr><td class="wrap-first">Arrêt net au plafond de coût d'une PR</td><td>Les reviewers tournent en parallèle : le dépassement est journalisé, pas interrompu.</td></tr>
+  </table></div>
+
+  <div class="foot">
+    ReviewMe — documentation d'usage · Created by Orka
+  </div>
+</section>
+
+</main>
+</div>
+<script>
+  (function(){
+    var liens = document.querySelectorAll("#menu a");
+    function maj(){
+      var h = location.hash || liens[0].getAttribute("href");
+      liens.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === h); });
+      var d = document.querySelector(".page.defaut");
+      if (d) d.style.display = (h === liens[0].getAttribute("href")) ? "block" : "none";
+      window.scrollTo(0, 0);
+    }
+    addEventListener("hashchange", maj);
+    maj();
+  })();
+</script>
+</body>
+</html>

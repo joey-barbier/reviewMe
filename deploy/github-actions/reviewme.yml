@@ -1,0 +1,45 @@
+# Exemple : déclencher ReviewMe en one-shot sur chaque PR via GitHub Actions.
+# À placer dans .github/workflows/ du repo CIBLE (celui dont on review les PR).
+#
+# Prérequis (secrets du repo) :
+#   REVIEWME_GITHUB_TOKEN : PAT fine-grained (Pull requests: R/W) — PAS le GITHUB_TOKEN par
+#                            défaut si tu veux que la review déclenche d'autres workflows.
+#   ANTHROPIC_API_KEY      : clé Claude (ou passerelle interne via ANTHROPIC_BASE_URL).
+#
+# ⚠️ Sécurité : le moteur lit du diff NON FIABLE. `pull_request` (et non
+# `pull_request_target`) garde le token en lecture seule côté fork et n'expose pas les
+# secrets aux PR de forks. Pour reviewer les PR de forks, prévoir une approbation manuelle.
+
+name: ReviewMe
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # historique complet pour le contexte de l'agent
+
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+
+      - name: Installer Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Review one-shot de la PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.REVIEWME_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REPO_PATH: .
+          GUIDELINES_PACK: ios
+          MAX_BUDGET_USD: "10.0"
+        run: uv run reviewme review --repo "${{ github.repository }}" --pr "${{ github.event.pull_request.number }}"

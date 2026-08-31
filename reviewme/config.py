@@ -1,0 +1,128 @@
+"""Configuration ReviewMe (pilotée par .env — le format éprouvé sur 3 mois).
+
+Note ADR v2 : on garde `.env` pour le prototype (le `reviewme.toml` complet + mapping
+multi-équipes est différé en v2). Les secrets viennent UNIQUEMENT de l'environnement.
+"""
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT_DIR / "data"
+REVIEWS_DIR = DATA_DIR / "reviews"
+STATE_FILE = DATA_DIR / "state.json"
+STATE_LOCK = DATA_DIR / "state.lock"
+LOG_FILE = DATA_DIR / "reviews.log"
+CONFIG_DIR = ROOT_DIR / "config"
+PROMPTS_DIR = CONFIG_DIR / "prompts"
+GUIDELINES_DIR = CONFIG_DIR / "guidelines"
+
+
+@dataclass(frozen=True)
+class Config:
+    github_token: str
+    github_repo: str
+    review_label: str = "review-me"
+    poll_interval: int = 300
+    repo_path: str = "."
+    max_budget_usd: float = 1.00
+    claude_agent: str = ""  # vide = persona auto-suffisant (config/prompts/system.md) ; sinon nom d'un agent Claude Code
+    claude_bin: str = ""    # binaire de la CLI de review. Vide = `claude` du PATH. Permet de
+                            # pointer un wrapper maison (passerelle interne, quotas, logs).
+    # --- ajouts v2 (inline + garde-fous) ---
+    confidence_threshold: int = 80        # findings < seuil non postés (rubrique officielle)
+    bot_login: str = ""                   # login du bot si identité dédiée (sinon vide)
+    guidelines_pack: str = "_default"     # pack de guidelines à charger (ex. "ios")
+    # --- ajouts v3 (reviewers multiples, ADR v3) ---
+    # Auth GitHub App (identité dédiée) : si renseignée, elle prime sur le PAT.
+    github_app_id: str = ""
+    github_app_private_key_path: str = ""
+    github_app_installation_id: str = ""   # vide = résolu depuis le repo cible
+    config_home: str = ""                 # dépôt de config EXTERNE (REVIEWME_CONFIG_HOME) :
+                                          # ses projets priment sur config/projects/ du core
+    project: str = ""                     # nom du dossier <projets>/<nom>. Vide = mode
+                                          # rétro-compatible v0.2 (reviewer unique `tech`).
+    max_comments_per_pr: int = 10         # plafond D6 : tous reviewers confondus, par PR
+    reviewer_id: str = "tech"             # identité du reviewer dans le marqueur de dédup.
+                                          # STABLE dans le temps pour un projet : le renommer
+                                          # ferait reposter tous ses commentaires en double.
+    review_all_prs: bool = False          # False = filtre par label ; True = toute PR ouverte
+    dry_run: bool = False                 # True = ne poste rien, log seulement
+
+    @property
+    def repo_owner(self) -> str:
+        return self.github_repo.split("/")[0]
+
+    @property
+    def repo_name(self) -> str:
+        return self.github_repo.split("/")[1]
+
+    @property
+    def uses_github_app(self) -> bool:
+        return bool(self.github_app_id and self.github_app_private_key_path)
+
+    @property
+    def api_headers(self) -> dict[str, str]:
+        """En-têtes de base. L'`Authorization` est réécrite à chaque requête par le client
+        (le token d'une GitHub App expire au bout d'une heure)."""
+        return {
+            "Authorization": f"Bearer {self.github_token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def load_config(*, require_repo: bool = True) -> Config:
+    # Le .env de l'INSTANCE (dépôt de config externe) prime sur celui du moteur : une
+    # instance porte son propre repo cible, son token et ses réglages, et reste complète.
+    # `load_dotenv` n'écrase jamais une variable déjà posée -> l'ordre fait la priorité.
+    home = os.environ.get("REVIEWME_CONFIG_HOME", "").strip()
+    if home:
+        load_dotenv(Path(home).expanduser() / ".env")
+    load_dotenv(ROOT_DIR / ".env")
+
+    token = os.environ.get("GITHUB_TOKEN", "")
+    app_id = os.environ.get("GITHUB_APP_ID", "")
+    app_key = os.environ.get("GITHUB_APP_PRIVATE_KEY_PATH", "")
+    if not token and not (app_id and app_key):
+        raise RuntimeError(
+            "Aucune authentification GitHub : définir GITHUB_TOKEN (PAT), ou "
+            "GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY_PATH (GitHub App).")
+
+    repo = os.environ.get("GITHUB_REPO", "")
+    if require_repo and not repo:
+        raise RuntimeError("GITHUB_REPO non défini (env ou .env)")
+
+    return Config(
+        github_token=token,
+        github_repo=repo,
+        review_label=os.environ.get("REVIEW_LABEL", "review-me"),
+        poll_interval=int(os.environ.get("POLL_INTERVAL", "300")),
+        repo_path=os.environ.get("REPO_PATH", "."),
+        max_budget_usd=float(os.environ.get("MAX_BUDGET_USD", "1.00")),
+        claude_agent=os.environ.get("CLAUDE_AGENT", ""),
+        claude_bin=os.environ.get("CLAUDE_BIN", ""),
+        confidence_threshold=int(os.environ.get("CONFIDENCE_THRESHOLD", "80")),
+        bot_login=os.environ.get("BOT_LOGIN", ""),
+        guidelines_pack=os.environ.get("GUIDELINES_PACK", "_default"),
+        github_app_id=app_id,
+        github_app_private_key_path=app_key,
+        github_app_installation_id=os.environ.get("GITHUB_APP_INSTALLATION_ID", ""),
+        config_home=os.environ.get("REVIEWME_CONFIG_HOME", ""),
+        project=os.environ.get("PROJECT", ""),
+        max_comments_per_pr=int(os.environ.get("MAX_COMMENTS_PER_PR", "10")),
+        reviewer_id=os.environ.get("REVIEWER_ID", "tech"),
+        review_all_prs=_env_bool("REVIEW_ALL_PRS", False),
+        dry_run=_env_bool("DRY_RUN", False),
+    )

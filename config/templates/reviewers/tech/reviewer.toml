@@ -1,0 +1,16 @@
+# Reviewer technique : architecture, sécurité, performance, fiabilité, conventions.
+output_mode = "inline"     # findings ancrés sur les lignes du diff
+priority = 10              # passe en premier (le plus utile si le budget vient à manquer)
+# when.paths absent = se déclenche sur toute PR
+
+# enabled = false        # met ce reviewer en sommeil sans supprimer son dossier
+
+[context]
+# Conventions du projet, LUES DANS LE DÉPÔT reviewé à chaque review (jamais recopiées ici :
+# une copie diverge du repo dès la première évolution). Fichier -> contenu injecté ;
+# dossier -> inventaire de ses .md. Un chemin introuvable est signalé en WARNING.
+read = [
+  "AGENTS.md",
+  "CONTRIBUTING.md",
+  "docs/",
+]

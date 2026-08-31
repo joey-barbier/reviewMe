@@ -1,0 +1,6 @@
+# Reviewer fonctionnel : le code couvre-t-il ce que le ticket demandait ?
+output_mode = "global"     # « AC3 non couvert » n'a aucune ligne de diff à pointer
+priority = 20
+requires = ["jira_ticket"] # sans ticket détecté (ou Jira non configuré) -> reviewer skippé
+
+# enabled = false        # met ce reviewer en sommeil sans supprimer son dossier

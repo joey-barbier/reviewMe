@@ -1,0 +1,376 @@
+"""Tests du fan-out multi-reviewers (ADR v3 D1/D2/D4/D6).
+
+Couvre les trois mécanismes qui coûtent cher s'ils lâchent :
+  - la SÉLECTION (D4) : un reviewer qui se déclenche sur toutes les PR fait payer le projet ;
+  - le PLAFOND (D6) : quatre reviewers zélés noient le développeur et le bot est désactivé ;
+  - le CLOISONNEMENT (D3) : deux reviewers sur une même ligne ne doivent pas s'annuler.
+
+Exécution : `pytest tests/` ou `python tests/test_fanout.py`.
+"""
+import logging
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from reviewme.config import Config                                    # noqa: E402
+from reviewme.diff_utils import LinePos                                # noqa: E402
+from reviewme.models import Finding, ReviewResult, Severity           # noqa: E402
+from reviewme.projects import (                                        # noqa: E402
+    ProjectConfig, ProjectConfigError, ReviewerSpec, load_project, select_reviewers,
+)
+from reviewme.reconciler import (                                      # noqa: E402
+    PrContext, _apply_cap, marker_key, prepare,
+)
+
+LOGGER = logging.getLogger("test")
+LOGGER.addHandler(logging.NullHandler())
+PR = {"number": 7, "head": {"sha": "abcdef1234567890"}, "title": "PR de test"}
+
+
+def _spec(rid, **kw):
+    return ReviewerSpec(id=rid, project="p", system_prompt="x", **kw)
+
+
+def _project(*specs):
+    return ProjectConfig(name="p", directory=None, reviewers=tuple(specs))
+
+
+def _config(**kw):
+    base = dict(github_token="t", github_repo="o/r", confidence_threshold=80)
+    base.update(kw)
+    return Config(**base)
+
+
+# --------------------------------------------------------------- sélection (D4)
+
+def test_reviewer_sans_when_se_declenche_toujours():
+    kept, skipped = select_reviewers(_project(_spec("tech")), ["src/Main.swift"])
+    assert [s.id for s in kept] == ["tech"] and not skipped
+
+
+def test_when_paths_evite_de_payer_pour_rien():
+    project = _project(_spec("i18n", when_paths=("**/*.strings", "**/values*/strings.xml")))
+    kept, skipped = select_reviewers(project, ["src/Main.swift", "README.md"])
+    assert not kept and "when.paths" in skipped[0][1]
+
+    kept, _ = select_reviewers(project, ["src/Main.swift", "fr.lproj/Localizable.strings"])
+    assert [s.id for s in kept] == ["i18n"]
+
+
+def test_when_paths_matche_a_la_racine_et_en_profondeur():
+    project = _project(_spec("i18n", when_paths=("**/*.strings",)))
+    for path in ("Localizable.strings", "a/b/c/Localizable.strings"):
+        kept, _ = select_reviewers(project, [path])
+        assert [s.id for s in kept] == ["i18n"], path
+
+
+def test_requires_absent_skippe_sans_erreur():
+    """Jira non configuré ou ticket introuvable : le reviewer `us` est écarté, pas en échec."""
+    project = _project(_spec("tech"), _spec("us", requires=("jira_ticket",)))
+    kept, skipped = select_reviewers(project, ["a.py"], available_context=set())
+    assert [s.id for s in kept] == ["tech"]
+    assert skipped[0][0].id == "us" and "jira_ticket" in skipped[0][1]
+
+    kept, _ = select_reviewers(project, ["a.py"], available_context={"jira_ticket"})
+    assert [s.id for s in kept] == ["tech", "us"]
+
+
+def test_ordre_par_priorite():
+    project = _project(_spec("i18n", priority=30), _spec("tech", priority=10), _spec("us", priority=20))
+    kept, _ = select_reviewers(project, ["a.py"])
+    assert [s.id for s in kept] == ["tech", "us", "i18n"]
+
+
+# --------------------------------------------------------------- plafond (D6)
+
+def _item(reviewer, sev, conf, line):
+    return {"path": "a.swift", "line": line, "side": "RIGHT", "body": "b",
+            "_severity": sev, "_confidence": conf, "_reviewer": reviewer}
+
+
+class _Prep:
+    def __init__(self, rid, batch):
+        self.reviewer_id, self.batch, self.counts = rid, batch, {}
+
+
+def test_plafond_garde_les_plus_graves():
+    a = _Prep("tech", [_item("tech", Severity.MINOR, 99, 1), _item("tech", Severity.BLOCKER, 85, 2)])
+    b = _Prep("i18n", [_item("i18n", Severity.IMPORTANT, 90, 3)])
+    kept = _apply_cap([a, b], 2, LOGGER, 7)
+    assert [c["_severity"] for c in kept] == [Severity.BLOCKER, Severity.IMPORTANT]
+    assert a.counts["capped"] == 1 and b.counts["capped"] == 0
+
+
+def test_plafond_departage_par_confiance():
+    a = _Prep("tech", [_item("tech", Severity.BLOCKER, 82, 1), _item("tech", Severity.BLOCKER, 97, 2)])
+    kept = _apply_cap([a], 1, LOGGER, 7)
+    assert kept[0]["_confidence"] == 97
+
+
+def test_pas_de_plafond_si_sous_le_seuil():
+    a = _Prep("tech", [_item("tech", Severity.MINOR, 90, 1)])
+    assert len(_apply_cap([a], 10, LOGGER, 7)) == 1 and a.counts == {}
+
+
+# --------------------------------------------------------------- préparation (D2/D3)
+
+def _result(findings, summary="Résumé.", parsed_ok=True):
+    return ReviewResult(status="COMMENT", summary=summary, findings=findings, parsed_ok=parsed_ok)
+
+
+def _finding(line=10, sev=Severity.BLOCKER, conf=95, path="a.swift", snippet="let x = y!"):
+    return Finding(path=path, line=line, severity=sev, message="Souci ici",
+                   snippet=snippet, confidence=conf)
+
+
+def _ctx():
+    # `valid_positions` renvoie {path: {ligne: LinePos}} : ici la ligne 10 est commentable.
+    return PrContext(valid={"a.swift": {10: LinePos(10, "let x = y!", added=True)}})
+
+
+def test_mode_global_ne_produit_aucun_inline():
+    """Un `us` en mode global poste UN commentaire : « AC3 non couvert » n'a pas de ligne."""
+    prep = prepare(PR, _config(), _ctx(), _result([_finding()]), LOGGER, "us", output_mode="global")
+    assert prep.batch == [] and prep.global_body and prep.global_update_id is None
+    assert marker_key(prep.global_body) == ("us", marker_key(prep.global_body)[1])
+
+
+def test_mode_global_met_a_jour_au_lieu_dempiler():
+    ctx = _ctx()
+    from reviewme.reconciler import summary_fingerprint
+    marker = summary_fingerprint("us")
+    ctx.global_by_marker[marker_key(marker)] = {"id": 4242, "body": marker}
+    prep = prepare(PR, _config(), ctx, _result([]), LOGGER, "us", output_mode="global")
+    assert prep.global_update_id == 4242
+
+
+def test_deux_reviewers_meme_ligne_ne_sannulent_pas():
+    """Le bug que D3 évite : sans reviewer dans la clé, le second serait avalé."""
+    ctx = _ctx()
+    tech = prepare(PR, _config(), ctx, _result([_finding()]), LOGGER, "tech", prefix="[TECH]")
+    # on simule que le commentaire de `tech` est déjà en ligne sur la PR
+    for item in tech.batch:
+        ctx.inline_by_marker[marker_key(item["body"])] = {"id": 1, "position": 3, "body": item["body"]}
+
+    again = prepare(PR, _config(), ctx, _result([_finding()]), LOGGER, "tech")
+    assert again.batch == [] and again.counts["deduped"] == 1        # dédup du même reviewer
+
+    other = prepare(PR, _config(), ctx, _result([_finding()]), LOGGER, "i18n", prefix="[I18N]")
+    assert len(other.batch) == 1 and other.counts["deduped"] == 0    # cloisonnement
+
+
+def test_seuil_de_confiance_respecte():
+    prep = prepare(PR, _config(), _ctx(), _result([_finding(conf=50)]), LOGGER, "tech")
+    assert prep.batch == [] and prep.counts["dropped_low"] == 1
+
+
+def test_ligne_imprecise_est_reancree_par_le_snippet():
+    """Le LLM se trompe de quelques lignes : on retrouve la bonne par le contenu."""
+    prep = prepare(PR, _config(), _ctx(), _result([_finding(line=999)]), LOGGER, "tech")
+    assert len(prep.batch) == 1 and prep.batch[0]["line"] == 10
+
+
+def test_finding_hors_diff_bascule_en_summary():
+    """Un fichier absent du diff n'est pas commentable (anti-422) : il part dans le summary."""
+    hors = _finding(path="jamais/touche.swift", snippet="autre chose")
+    prep = prepare(PR, _config(), _ctx(), _result([hors]), LOGGER, "tech")
+    assert prep.batch == [] and prep.counts["out_of_diff"] == 1
+    assert "jamais/touche.swift" in prep.summary
+
+
+def test_json_illisible_tombe_en_commentaire_global():
+    prep = prepare(PR, _config(), _ctx(), _result([], parsed_ok=False), LOGGER, "tech")
+    assert prep.counts["fallback"] and prep.global_body and not prep.batch
+
+
+def test_prefixe_seulement_en_multi_reviewer():
+    solo = prepare(PR, _config(), _ctx(), _result([_finding()]), LOGGER, "tech")
+    multi = prepare(PR, _config(), _ctx(), _result([_finding()]), LOGGER, "tech", prefix="[TECH]")
+    assert "[TECH]" not in solo.batch[0]["body"] and "[TECH]" in multi.batch[0]["body"]
+
+
+# --------------------------------------------------------------- moteur LLM
+
+def test_claude_bin_permet_un_wrapper():
+    """Pointer un wrapper maison (passerelle, quotas, logs) sans toucher au code."""
+    from reviewme.reviewer import _find_claude
+    assert _find_claude(_config(claude_bin="/bin/echo")) == "/bin/echo"
+    assert _find_claude(_config(claude_bin="  ")) == _find_claude(_config())   # vide = défaut
+
+
+def test_claude_bin_introuvable_message_clair():
+    from reviewme.reviewer import _find_claude
+    try:
+        _find_claude(_config(claude_bin="/nexiste/pas/binaire"))
+    except RuntimeError as e:
+        assert "CLAUDE_BIN" in str(e)
+    else:
+        raise AssertionError("RuntimeError attendue")
+
+
+# --------------------------------------------------------------- conventions du dépôt (D13)
+
+def test_context_read_injecte_les_fichiers_et_liste_les_dossiers():
+    from reviewme.repo_context import build_repo_context
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "AGENTS.md").write_text("Règle : 4 espaces.", encoding="utf-8")
+        (repo / "docs").mkdir()
+        (repo / "docs" / "style.md").write_text("...", encoding="utf-8")
+
+        spec = _spec("tech", context_read=("AGENTS.md", "docs/"))
+        bloc = build_repo_context(spec, str(repo), LOGGER)
+        assert "Règle : 4 espaces." in bloc          # fichier : contenu injecté
+        assert "`docs/style.md`" in bloc             # dossier : inventaire seulement
+        assert "..." not in bloc.replace("Règle : 4 espaces.", "")
+
+
+def test_context_read_signale_un_chemin_mort():
+    """Le gain du déclaratif : un chemin obsolète se voit au lieu de priver le reviewer."""
+    import logging as _logging
+    from reviewme.repo_context import build_repo_context
+
+    captured = []
+
+    class _Catch(_logging.Handler):
+        def emit(self, record):
+            captured.append(record.getMessage())
+
+    logger = _logging.getLogger("test-mort")
+    logger.addHandler(_Catch())
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "AGENTS.md").write_text("x", encoding="utf-8")
+        build_repo_context(_spec("tech", context_read=("AGENTS.md", "PARTI.md")), tmp, logger)
+    assert any("PARTI.md" in m and "introuvable" in m for m in captured)
+
+
+def test_context_read_refuse_de_sortir_du_depot():
+    from reviewme.repo_context import build_repo_context
+    with tempfile.TemporaryDirectory() as tmp:
+        spec = _spec("tech", context_read=("../../etc/passwd", "/etc/hosts"))
+        assert build_repo_context(spec, tmp, LOGGER) == ""
+
+
+def test_sans_context_read_aucun_bloc():
+    from reviewme.repo_context import build_repo_context
+    with tempfile.TemporaryDirectory() as tmp:
+        assert build_repo_context(_spec("tech"), tmp, LOGGER) == ""
+
+
+# --------------------------------------------------------------- dépôt externe (D12)
+
+def test_config_home_externe_prime_sur_le_core():
+    """Un dépôt de config à part (un dépôt par organisation) sans forker le moteur."""
+    import reviewme.projects as P
+    original = os.environ.pop("REVIEWME_CONFIG_HOME", None)
+    try:
+        assert P.projects_dir() == P.PROJECTS_DIR              # défaut : dans le repo du core
+        os.environ["REVIEWME_CONFIG_HOME"] = "/tmp/mon-instance"
+        assert P.projects_dir() == Path("/tmp/mon-instance/projects")
+        # la Config prime sur l'environnement (utile en test et en multi-instance)
+        assert P.projects_dir(_config(config_home="/autre/depot")) == Path("/autre/depot/projects")
+    finally:
+        os.environ.pop("REVIEWME_CONFIG_HOME", None)
+        if original is not None:
+            os.environ["REVIEWME_CONFIG_HOME"] = original
+
+
+def test_config_home_vide_retombe_sur_le_core():
+    import reviewme.projects as P
+    original = os.environ.pop("REVIEWME_CONFIG_HOME", None)
+    try:
+        os.environ["REVIEWME_CONFIG_HOME"] = "   "            # variable posée mais vide
+        assert P.projects_dir() == P.PROJECTS_DIR
+    finally:
+        os.environ.pop("REVIEWME_CONFIG_HOME", None)
+        if original is not None:
+            os.environ["REVIEWME_CONFIG_HOME"] = original
+
+
+# --------------------------------------------------------------- config projet (D1)
+
+def _write_project(root: Path, name: str, reviewers: dict[str, tuple[str, str]]):
+    """Un projet = un dossier `reviewers/` ; chaque sous-dossier EST un reviewer."""
+    pdir = root / name
+    (pdir / "reviewers").mkdir(parents=True)
+    for rid, (toml, system) in reviewers.items():
+        rdir = pdir / "reviewers" / rid
+        rdir.mkdir()
+        (rdir / "reviewer.toml").write_text(toml, encoding="utf-8")
+        if system is not None:
+            (rdir / "system.md").write_text(system, encoding="utf-8")
+    return pdir
+
+
+def test_chargement_projet_et_erreurs_explicites():
+    import reviewme.projects as P
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        original = P.PROJECTS_DIR
+        P.PROJECTS_DIR = root
+        try:
+            # les reviewers sont DÉDUITS des dossiers : rien à déclarer ailleurs
+            _write_project(root, "ok-repo", {
+                "tech": ('output_mode = "inline"\npriority = 5\n', "persona"),
+                "i18n": ('output_mode = "mixed"\n', "persona i18n"),
+            })
+            project = load_project("ok-repo")
+            assert sorted(s.id for s in project.reviewers) == ["i18n", "tech"]
+            assert project.reviewer("tech").priority == 5
+
+            # `enabled = false` met en sommeil sans supprimer le dossier
+            _write_project(root, "dormant", {
+                "tech": ("", "persona"),
+                "i18n": ("enabled = false\n", "persona i18n"),
+            })
+            assert [s.id for s in load_project("dormant").reviewers] == ["tech"]
+
+            _write_project(root, "bad-mode", {"tech": ('output_mode = "carrier-pigeon"\n', "persona")})
+            _expect_error(load_project, "bad-mode", "output_mode")
+
+            _write_project(root, "no-persona", {"tech": ("", None)})
+            _expect_error(load_project, "no-persona", "system.md")
+
+            _write_project(root, "vide", {})
+            _expect_error(load_project, "vide", "aucun reviewer")
+
+            _write_project(root, "tous-eteints", {"tech": ("enabled = false\n", "persona")})
+            _expect_error(load_project, "tous-eteints", "désactivés")
+
+            (root / "sans-dossier-reviewers").mkdir()
+            (root / "sans-dossier-reviewers" / "common").mkdir()
+            _expect_error(load_project, "sans-dossier-reviewers", "`reviewers/` manquant")
+
+            # dossier vide = submodule git non initialisé : le message doit le dire
+            (root / "submodule-vide").mkdir()
+            _expect_error(load_project, "submodule-vide", "git submodule update --init")
+
+            _expect_error(load_project, "jamais-cree", "introuvable")
+        finally:
+            P.PROJECTS_DIR = original
+
+
+def _expect_error(fn, arg, needle):
+    try:
+        fn(arg)
+    except ProjectConfigError as e:
+        assert needle in str(e), f"message peu clair pour '{needle}' : {e}"
+    else:
+        raise AssertionError(f"ProjectConfigError attendue pour {arg}")
+
+
+if __name__ == "__main__":
+    fails = 0
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            try:
+                fn()
+                print(f"  ok   {name}")
+            except AssertionError as e:
+                fails += 1
+                print(f"  FAIL {name}: {e}")
+    print("\n" + ("TOUS LES TESTS PASSENT" if not fails else f"{fails} ÉCHEC(S)"))
+    sys.exit(1 if fails else 0)
