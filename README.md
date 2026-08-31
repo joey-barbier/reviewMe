@@ -30,7 +30,17 @@ mon-instance/                   ← une instance (dépôt privé, versionné à 
     reviewers/<id>/             un dossier = un reviewer
 ```
 
-Les deux sont reliés par `REVIEWME_CONFIG_HOME`. Une organisation a son instance, avec ses
+Les deux sont reliés par `REVIEWME_CONFIG_HOME` — un simple chemin, donc trois stratégies :
+
+| Stratégie | Où vit la config | Quand |
+|---|---|---|
+| Dépôt d'instance dédié | un dépôt privé à part | plusieurs repos, config mutualisée et hors de portée des PR |
+| Dans le dépôt reviewé | `.reviewme/` à sa racine | un seul repo ; la config évolue dans la même PR que le code |
+| Aucune config | — | démarrer, tester la chaîne |
+
+Config dans le dépôt reviewé : `REVIEWME_CONFIG_HOME=$CLONE/.reviewme`. Rien à créer ni à
+cloner en plus — mais protéger `.reviewme/` par `CODEOWNERS`, sinon une PR peut adoucir sa
+propre review. Une organisation a son instance, avec ses
 consignes internes, sans jamais toucher au moteur.
 
 ## Installation

@@ -294,6 +294,28 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
   <div class="tipbox"><span class="chip c-ok">Le gain</span> Quand un fichier de conventions est renommé ou supprimé, le WARNING le signale au run suivant. Sans déclaration, le reviewer perdrait ses règles sans que personne ne s'en aperçoive — il continuerait de commenter, simplement moins bien.</div>
   <p>Il reste donc dans <code>common/</code> uniquement ce qui <b>n'existe nulle part dans le repo</b> : langue, ton, longueur des remarques, faux positifs à ne jamais produire — commun à tous les reviewers du projet.</p>
 
+  <h2>Où placer votre configuration</h2>
+  <p>La config de projets vit là où <code>REVIEWME_CONFIG_HOME</code> pointe — c'est un simple chemin, donc trois stratégies sont possibles. Elles ne s'excluent pas : on démarre souvent par la dernière et on remonte.</p>
+  <div class="card twrap"><table>
+    <tr><th>Stratégie</th><th>Où vit la config</th><th>Quand la choisir</th></tr>
+    <tr><td class="wrap-first"><b>Dépôt d'instance dédié</b><br><code>reviewme-monprojet</code></td><td>Un dépôt privé à part<br><code>REVIEWME_CONFIG_HOME=~/dev/reviewme-monprojet</code></td><td>Plusieurs dépôts à reviewer, config mutualisée entre eux, et <b>hors de portée des PR</b> qu'elle juge. La forme de référence.</td></tr>
+    <tr><td class="wrap-first"><b>Dans le dépôt reviewé</b><br><code>.reviewme/</code></td><td>À la racine du projet lui-même<br><code>REVIEWME_CONFIG_HOME=$CLONE/.reviewme</code></td><td>Un seul dépôt. Rien à créer, aucun credential en plus, et la config évolue <b>dans la même PR</b> que le code qu'elle décrit.</td></tr>
+    <tr><td class="wrap-first"><b>Aucune config</b><br>mode simple</td><td>Rien — les prompts du moteur</td><td>Démarrer, tester la chaîne. Aucune connaissance des conventions du projet.</td></tr>
+  </table></div>
+
+  <h3>La config dans le dépôt reviewé</h3>
+  <p><code>init-project</code> crée directement au bon endroit :</p>
+  <pre><code>cd mon-projet
+REVIEWME_CONFIG_HOME=$PWD/.reviewme reviewme init-project mon-projet --reviewers tech
+
+.reviewme/projects/mon-projet/common/style.md
+.reviewme/projects/mon-projet/reviewers/tech/{reviewer.toml, system.md}</code></pre>
+  <p>En CI, le dépôt est déjà cloné : il suffit de pointer dedans, sans rien récupérer de plus.</p>
+  <pre><code>export REVIEWME_CONFIG_HOME="$CLONE_DU_PROJET/.reviewme"
+export PROJECT=mon-projet
+reviewme review --pr "$PR"</code></pre>
+  <div class="warnbox"><span class="chip c-ko">Le risque à couvrir</span> Si la config vit dans le dépôt reviewé, <b>une PR peut modifier sa propre review</b> — adoucir une persona, désactiver un reviewer. Protéger <code>.reviewme/</code> par une entrée <code>CODEOWNERS</code>, ou choisir le dépôt d'instance dédié quand l'enjeu le justifie.</div>
+
   <h2>Une instance = un dépôt de config</h2>
   <p>Une organisation ne veut ni <b>forker le moteur</b> (il faudrait rebaser à chaque évolution), ni committer ses personas et consignes internes dans le dépôt du moteur. La config de projets vit donc dans <b>son propre dépôt</b>, relié par une seule variable :</p>
   <pre><code>export REVIEWME_CONFIG_HOME=~/dev/mon-instance
