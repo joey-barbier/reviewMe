@@ -50,6 +50,13 @@ def _gather_context(pr: dict, config: Config, logger: logging.Logger) -> tuple[d
 def _run_one(spec: ReviewerSpec, pr_number: int, title: str, diff: str,
              config: Config, context: dict, logger: logging.Logger):
     """Exécute un reviewer (précheck déterministe puis LLM). Renvoie (spec, result)."""
+    # Plugins déclarés par le reviewer : skills et agents dont il a besoin (installés une
+    # fois, puis réutilisés). Un échec ici ne concerne QUE ce reviewer.
+    if spec.plugins_marketplaces or spec.plugins_install:
+        from .plugins import ensure_plugins
+        from .reviewer import _find_claude
+        ensure_plugins(spec, _find_claude(config), logger)
+
     blocks = [context[k] for k in spec.requires if k in context]
 
     # Conventions du dépôt : déclarées dans reviewer.toml, lues à la source (D13).

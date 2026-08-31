@@ -14,3 +14,11 @@ read = [
   "CONTRIBUTING.md",
   "docs/",
 ]
+
+# [plugins]
+# Skills et agents dont ce reviewer a besoin, installés avant la review (idempotent).
+# ⚠️ Un plugin est du CODE TIERS qui tourne aux côtés des secrets du job : le relire comme
+# du code. Le core garde son allowlist d'outils — un skill de plugin n'obtient pas plus de
+# droits que le reviewer.
+# marketplaces = ["owner/marketplace-repo"]
+# install      = ["mon-plugin"]            # ou "mon-plugin@marketplace"

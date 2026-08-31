@@ -192,6 +192,40 @@ def test_prefixe_seulement_en_multi_reviewer():
     assert "[TECH]" not in solo.batch[0]["body"] and "[TECH]" in multi.batch[0]["body"]
 
 
+# --------------------------------------------------------------- plugins
+
+def test_sans_plugin_declare_aucune_installation():
+    from reviewme.plugins import ensure_plugins
+    ensure_plugins(_spec("tech"), "/bin/false", LOGGER)   # ne doit rien lancer, donc ne pas échouer
+
+
+def test_plugin_en_echec_leve_une_erreur_explicite():
+    from reviewme.plugins import PluginError, ensure_plugins
+    spec = _spec("tech", plugins_install=("plugin-qui-nexiste-pas",))
+    try:
+        ensure_plugins(spec, "/bin/false", LOGGER)        # /bin/false : échoue toujours
+    except PluginError as e:
+        assert "plugin-qui-nexiste-pas" in str(e)
+    else:
+        raise AssertionError("PluginError attendue")
+
+
+def test_parsing_de_plugin_list():
+    """`claude plugin list` mélange identifiants et lignes de détail."""
+    import reviewme.plugins as P
+    sortie = ("Installed plugins:\n\n"
+              "  ❯ context7@claude-plugins-official\n"
+              "    Version: unknown\n"
+              "    Scope: user\n"
+              "  ❯ autre-plugin@perso\n")
+    original = P._run
+    P._run = lambda cli, args, logger: (0, sortie)
+    try:
+        assert P.installed_plugins("claude", LOGGER) == {"context7", "autre-plugin"}
+    finally:
+        P._run = original
+
+
 # --------------------------------------------------------------- moteur LLM
 
 def test_claude_bin_permet_un_wrapper():

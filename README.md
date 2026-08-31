@@ -114,6 +114,10 @@ paths = ["**/*.strings", "**/i18n/**/*.json"]
 
 [context]                   # conventions LUES DANS LE DÉPÔT reviewé, jamais recopiées ici
 read = ["AGENTS.md", "docs/"]
+
+[plugins]                   # skills/agents Claude Code requis, installés avant la review
+marketplaces = ["owner/marketplace-repo"]
+install      = ["mon-plugin"]
 ```
 
 `[context] read` est le point important : les conventions d'un projet vivent déjà dans son

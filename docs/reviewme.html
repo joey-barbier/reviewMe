@@ -367,6 +367,15 @@ ANTHROPIC_API_KEY=sk-ant-... GITHUB_TOKEN=github_pat_... \
 
   <div class="warnbox"><span class="chip c-ko">Le vrai risque</span> Quatre reviewers zélés = 15 commentaires = le développeur décroche et désactive le bot. <code>MAX_COMMENTS_PER_PR</code> (défaut 10) coupe <b>par PR, tous reviewers confondus</b>, en gardant les plus graves puis les plus sûrs. Le reste est journalisé, pas posté.</div>
 
+  <h2>Plugins</h2>
+  <p>Un reviewer peut avoir besoin de <b>skills ou d'agents</b> qui ne vivent pas dans ReviewMe — outillage maison, analyse spécialisée. Il les déclare, le moteur les installe avant la review :</p>
+  <pre><code># reviewer.toml
+[plugins]
+marketplaces = ["owner/marketplace-repo"]   # ajoutés d'abord
+install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code></pre>
+  <p>L'opération est <b>idempotente</b> : ce qui est déjà installé n'est pas réinstallé, une review ne paie pas une résolution réseau à chaque PR. Un échec n'affecte que le reviewer concerné — les autres continuent.</p>
+  <div class="warnbox"><span class="chip c-ko">Code tiers</span> Installer un plugin fait tourner du <b>code que vous n'avez pas écrit</b> dans l'environnement de review, aux côtés des secrets du job. Un plugin se relit comme du code. Le moteur garde son allowlist d'outils : un skill de plugin n'obtient <b>pas plus de droits</b> que le reviewer qui l'invoque — ce qui limite aussi ce qu'un plugin très outillé peut faire ici.</div>
+
   <h2>Le déterministe avant le LLM</h2>
   <p>Un reviewer peut déclarer un <code>precheck</code> : un script dont la sortie est injectée comme <b>faits établis</b>. « La clé <code>checkout.title</code> existe en <code>fr</code> et manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde ce qui demande du jugement : variables non substituées, pluriels, longueur, ton. Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
 
@@ -461,6 +470,7 @@ PROJECT=ah-ios</code></pre>
     <tr><td>reconciler.py</td><td>Fingerprint + dédup + validation + <code>prepare()</code> (sans écriture) / <code>post_all()</code> (écriture unique)</td></tr>
     <tr><td>projects.py</td><td>Config par projet : chargement de <code>config/projects/&lt;repo&gt;/</code>, specs de reviewers, sélection</td></tr>
     <tr><td>precheck.py</td><td>Exécute le script déterministe d'un reviewer (les faits avant le LLM)</td></tr>
+    <tr><td>plugins.py</td><td>Installe les plugins Claude Code déclarés par un reviewer (idempotent)</td></tr>
     <tr><td>repo_context.py</td><td>Lit les conventions <b>dans le dépôt reviewé</b> (<code>[context] read</code>) — jamais de copie</td></tr>
     <tr><td>context/jira.py</td><td>Ticket + critères d'acceptation (optionnel — absent = reviewer <code>us</code> skippé)</td></tr>
     <tr><td>github_auth.py</td><td>PAT ou <b>GitHub App</b> (JWT RS256 → token d'installation, renouvelé)</td></tr>

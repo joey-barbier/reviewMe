@@ -77,6 +77,8 @@ class ReviewerSpec:
     enabled: bool = True                   # False = présent mais mis en sommeil
     context_read: tuple[str, ...] = ()     # fichiers/dossiers de conventions à lire DANS le
                                            # dépôt reviewé (D13) — jamais recopiés ici
+    plugins_marketplaces: tuple[str, ...] = ()   # marketplaces Claude Code à déclarer
+    plugins_install: tuple[str, ...] = ()        # plugins à installer avant la review
 
     def budget(self, config: Config) -> float:
         return self.max_budget_usd if self.max_budget_usd is not None else config.max_budget_usd
@@ -149,6 +151,7 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
 
     when = data.get("when", {}) or {}
     context = data.get("context", {}) or {}
+    plugins = data.get("plugins", {}) or {}
     budget = data.get("max_budget_usd")
 
     return ReviewerSpec(
@@ -165,6 +168,8 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
         directory=rdir,
         enabled=bool(data.get("enabled", True)),
         context_read=tuple(context.get("read", ()) or ()),
+        plugins_marketplaces=tuple(plugins.get("marketplaces", ()) or ()),
+        plugins_install=tuple(plugins.get("install", ()) or ()),
     )
 
 
