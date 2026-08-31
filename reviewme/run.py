@@ -17,6 +17,7 @@ Fan-out v3 (ADR v3 D4/D5/D8) :
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
@@ -98,11 +99,21 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
                 extra={"pr_number": pr_number, "pr_title": title, "status": "started"})
 
     try:
-        # Contexte : best-effort fetch de la branche de base (comme le MVP)
+        # Contexte : fetch best-effort de la branche de base, pour que l'agent puisse
+        # comparer avec `git log/diff`. VRAIMENT best-effort : sur un clone CI peu profond
+        # ou un gros dépôt, ce fetch peut traîner ou échouer — il ne doit jamais faire
+        # tomber la review, qui n'en dépend pas. `FETCH_BASE_TIMEOUT=0` le désactive.
         base_ref = pr.get("base", {}).get("ref")
-        if base_ref:
-            subprocess.run(["git", "fetch", "origin", base_ref, "--quiet"],
-                           cwd=config.repo_path, capture_output=True, timeout=60, check=False)
+        fetch_timeout = int(os.environ.get("FETCH_BASE_TIMEOUT", "30"))
+        if base_ref and fetch_timeout > 0:
+            try:
+                subprocess.run(["git", "fetch", "origin", base_ref, "--quiet", "--depth", "50"],
+                               cwd=config.repo_path, capture_output=True,
+                               timeout=fetch_timeout, check=False)
+            except (subprocess.TimeoutExpired, OSError) as e:
+                logger.info("PR #%s : fetch de '%s' abandonné (%s) — la review continue "
+                            "sans l'historique de la branche de base",
+                            pr_number, base_ref, type(e).__name__)
 
         diff = gh.get_pr_diff(pr_number)
         if not diff.strip():

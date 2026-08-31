@@ -192,6 +192,33 @@ def test_prefixe_seulement_en_multi_reviewer():
     assert "[TECH]" not in solo.batch[0]["body"] and "[TECH]" in multi.batch[0]["body"]
 
 
+# --------------------------------------------------------------- robustesse du contexte git
+
+def test_fetch_de_la_branche_de_base_ne_casse_jamais_la_review():
+    """Sur un clone CI peu profond ou un gros dépôt, ce fetch peut traîner. Il est
+    best-effort : son échec ne doit pas faire tomber la review, qui n'en dépend pas."""
+    import subprocess as sp
+    import types
+    from unittest.mock import patch
+
+    import reviewme.run as R
+
+    class _GH:
+        def get_pr_diff(self, n):
+            return ""            # sort juste après le fetch : on teste bien ce point-là
+        def get_pr_files(self, n):
+            return []
+
+    pr = {"number": 1, "head": {"sha": "a" * 40}, "base": {"ref": "develop"},
+          "title": "t", "user": {}}
+    cfg = types.SimpleNamespace(repo_path=".", dry_run=True)
+
+    for panne in (sp.TimeoutExpired("git fetch", 30), OSError("git introuvable")):
+        with patch.object(R.subprocess, "run", side_effect=panne):
+            out = R.run_review(pr, cfg, _GH(), LOGGER, force=True)
+        assert "error" not in out, f"{type(panne).__name__} a fait tomber la review : {out}"
+
+
 # --------------------------------------------------------------- plugins
 
 def test_sans_plugin_declare_aucune_installation():
