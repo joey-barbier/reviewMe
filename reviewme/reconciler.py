@@ -313,8 +313,20 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
     out_of_diff_only = any(p.counts.get("out_of_diff") for p in prepared)
 
     if config.dry_run:
+        # En dry-run, AFFICHER ce qui serait posté : c'est tout l'intérêt du mode, sans quoi
+        # on ne peut ni juger la pertinence ni calibrer le seuil de confiance.
         logger.info("PR #%s [DRY-RUN] : %d inline, %d réponses, %d global, %s",
                     pr_number, len(batch), len(replies), len(globals_), totals)
+        for c in batch:
+            body = _MARKER_RE.sub("", c["body"]).replace("\n", " ").strip()
+            logger.info("  [%s] %s:%s (confiance %s) — %s",
+                        c["_reviewer"], c["path"], c["line"], c["_confidence"], body[:400])
+        for p in prepared:
+            if p.global_body:
+                extrait = _MARKER_RE.sub("", p.global_body).strip()
+                logger.info("  [%s] commentaire global :\n%s", p.reviewer_id, extrait[:1500])
+            elif p.summary and p.output_mode != "global":
+                logger.info("  [%s] résumé :\n%s", p.reviewer_id, p.summary[:1000])
         totals["posted"] = len(batch)
         return totals
 

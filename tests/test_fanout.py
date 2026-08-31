@@ -219,6 +219,29 @@ def test_fetch_de_la_branche_de_base_ne_casse_jamais_la_review():
         assert "error" not in out, f"{type(panne).__name__} a fait tomber la review : {out}"
 
 
+def test_dry_run_affiche_ce_qui_serait_poste():
+    """Sans le contenu, le dry-run ne permet ni de juger la review ni de calibrer le seuil."""
+    import logging as _logging
+    from reviewme.reconciler import post_all
+
+    lignes = []
+
+    class _Catch(_logging.Handler):
+        def emit(self, record):
+            lignes.append(record.getMessage())
+
+    logger = _logging.getLogger("test-dryrun")
+    logger.addHandler(_Catch())
+    prep = prepare(PR, _config(dry_run=True), _ctx(), _result([_finding()]), logger, "tech")
+    post_all(PR, _config(dry_run=True), None, [prep], logger)
+
+    joint = "\n".join(lignes)
+    assert "a.swift:10" in joint          # où
+    assert "Souci ici" in joint           # quoi
+    assert "95" in joint                  # avec quelle confiance
+    assert "reviewme:" not in joint       # le marqueur technique reste masqué
+
+
 # --------------------------------------------------------------- plugins
 
 def test_sans_plugin_declare_aucune_installation():
