@@ -232,6 +232,7 @@ def test_dry_run_affiche_ce_qui_serait_poste():
 
     logger = _logging.getLogger("test-dryrun")
     logger.addHandler(_Catch())
+    logger.setLevel(_logging.INFO)   # sans ça, les INFO sont filtrés par le niveau du root
     prep = prepare(PR, _config(dry_run=True), _ctx(), _result([_finding()]), logger, "tech")
     post_all(PR, _config(dry_run=True), None, [prep], logger)
 
