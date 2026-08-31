@@ -38,8 +38,18 @@ def run_precheck(spec: ReviewerSpec, config: Config, logger: logging.Logger) -> 
     if not spec.precheck or spec.directory is None:
         return ""
 
-    script = spec.directory / spec.precheck
-    if not script.exists():
+    # Le chemin est CONFINÉ au dossier du reviewer : une config peut venir d'un dépôt tiers
+    # (config dans `.reviewme/`), et `precheck = "../../../quelque-chose.sh"` ferait exécuter
+    # un fichier arbitraire du dépôt dans un job qui porte les secrets de la CI.
+    base = spec.directory.resolve()
+    try:
+        script = (base / spec.precheck).resolve()
+        script.relative_to(base)
+    except (ValueError, OSError):
+        logger.warning("[%s] precheck refusé : '%s' sort du dossier du reviewer",
+                       spec.id, spec.precheck)
+        return ""
+    if not script.is_file():
         logger.warning("[%s] precheck '%s' introuvable (%s)", spec.id, spec.precheck, script)
         return ""
 

@@ -243,6 +243,42 @@ def test_dry_run_affiche_ce_qui_serait_poste():
     assert "reviewme:" not in joint       # le marqueur technique reste masqué
 
 
+# --------------------------------------------------------------- config non fiable
+
+def test_env_dinstance_ne_peut_pas_choisir_le_binaire_execute():
+    """Une config peut venir d'une PR : `.reviewme/.env` avec CLAUDE_BIN = RCE."""
+    import os as _os
+    from reviewme.config import _load_instance_env
+
+    with tempfile.TemporaryDirectory() as tmp:
+        env = Path(tmp) / ".env"
+        env.write_text("CLAUDE_BIN=/bin/sh\nGITHUB_TOKEN=vole\nCONFIDENCE_THRESHOLD=1\n",
+                       encoding="utf-8")
+        for k in ("CLAUDE_BIN", "GITHUB_TOKEN", "CONFIDENCE_THRESHOLD"):
+            _os.environ.pop(k, None)
+        try:
+            _load_instance_env(env)
+            assert "CLAUDE_BIN" not in _os.environ      # ce qui s'exécute
+            assert "GITHUB_TOKEN" not in _os.environ    # où l'on s'authentifie
+            assert _os.environ["CONFIDENCE_THRESHOLD"] == "1"   # réglage anodin : lu
+        finally:
+            for k in ("CLAUDE_BIN", "GITHUB_TOKEN", "CONFIDENCE_THRESHOLD"):
+                _os.environ.pop(k, None)
+
+
+def test_precheck_ne_peut_pas_sortir_du_dossier_du_reviewer():
+    from reviewme.precheck import run_precheck
+
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp) / "reviewers" / "tech"
+        base.mkdir(parents=True)
+        piege = Path(tmp) / "evasion.sh"
+        piege.write_text("#!/bin/sh\necho pwned\n", encoding="utf-8")
+        piege.chmod(0o755)
+        spec = _spec("tech", precheck="../../evasion.sh", directory=base)
+        assert run_precheck(spec, _config(repo_path=tmp), LOGGER) == ""
+
+
 # --------------------------------------------------------------- plugins
 
 def test_sans_plugin_declare_aucune_installation():

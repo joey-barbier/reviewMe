@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
@@ -83,13 +83,49 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return val.strip().lower() in {"1", "true", "yes", "on"}
 
 
+#: Variables JAMAIS lues depuis le `.env` d'une instance : elles décident de ce qui est
+#: exécuté ou de l'endroit où l'on s'authentifie. Une config peut venir d'un dépôt tiers.
+INSTANCE_ENV_DENYLIST = frozenset({
+    "CLAUDE_BIN",                   # binaire lancé comme moteur de review -> RCE
+    "CLAUDE_AGENT",
+    "REPO_PATH",                    # dépôt exploré par l'agent
+    "REVIEWME_CONFIG_HOME",         # redirection de la config elle-même
+    "ANTHROPIC_BASE_URL",           # redirection du trafic modèle
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_API_KEY",
+    "GITHUB_TOKEN",
+    "GITHUB_APP_PRIVATE_KEY_PATH",
+    "PATH",
+})
+
+
+def _load_instance_env(path: Path) -> None:
+    """Charge le `.env` d'une instance, en écartant les variables sensibles.
+
+    On ne fait PAS confiance à ce fichier : il peut arriver par une Pull Request.
+    """
+    if not path.is_file():
+        return
+    values = dotenv_values(path)
+    for key, value in values.items():
+        if value is None or key in INSTANCE_ENV_DENYLIST:
+            continue
+        os.environ.setdefault(key, value)   # ne surcharge jamais l'environnement du job
+
+
 def load_config(*, require_repo: bool = True) -> Config:
-    # Le .env de l'INSTANCE (dépôt de config externe) prime sur celui du moteur : une
-    # instance porte son propre repo cible, son token et ses réglages, et reste complète.
-    # `load_dotenv` n'écrase jamais une variable déjà posée -> l'ordre fait la priorité.
+    # Le .env de l'INSTANCE prime sur celui du moteur : une instance porte son repo cible,
+    # son token et ses réglages. `load_dotenv` n'écrase jamais une variable déjà posée,
+    # donc l'ordre fait la priorité.
+    #
+    # SÉCURITÉ : ce fichier peut venir d'un dépôt que l'on est en train de REVIEWER (config
+    # dans `.reviewme/`), donc d'une PR écrite par un tiers. Les variables qui décident
+    # QUOI EXÉCUTER en sont exclues : sans ce filtre, une PR ajoutant `.reviewme/.env` avec
+    # `CLAUDE_BIN=/bin/sh` obtient l'exécution de code arbitraire dans un job qui porte les
+    # secrets de la CI. Ces variables ne se règlent que dans l'environnement du job.
     home = os.environ.get("REVIEWME_CONFIG_HOME", "").strip()
     if home:
-        load_dotenv(Path(home).expanduser() / ".env")
+        _load_instance_env(Path(home).expanduser() / ".env")
     load_dotenv(ROOT_DIR / ".env")
 
     token = os.environ.get("GITHUB_TOKEN", "")

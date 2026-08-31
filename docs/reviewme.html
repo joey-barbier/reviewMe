@@ -336,7 +336,13 @@ export REPO_PATH="$CLONE_DU_PROJET"
 
 reviewme review --pr "$PR" --dry-run     # retirer --dry-run une fois calibré</code></pre>
   <p>Rien à cloner en plus, aucun credential supplémentaire. Recette complète pour Bitrise : <code>deploy/bitrise-step.md</code> ; pour GitHub Actions : <code>deploy/github-actions/</code>.</p>
-  <div class="warnbox"><span class="chip c-ko">Le risque à couvrir</span> Si la config vit dans le dépôt reviewé, <b>une PR peut modifier sa propre review</b> — adoucir une persona, désactiver un reviewer. Protéger <code>.reviewme/</code> par une entrée <code>CODEOWNERS</code>, ou choisir le dépôt d'instance dédié quand l'enjeu le justifie.</div>
+  <div class="warnbox"><span class="chip c-ko">Le risque à couvrir</span> Si la config vit dans le dépôt reviewé, <b>une PR peut modifier sa propre review</b> — adoucir une persona, désactiver un reviewer. Le moteur ferme les conséquences les plus graves : le <code>.env</code> d'une instance ne peut pas définir ce qui est <b>exécuté</b> ni <b>où l'on s'authentifie</b> (<code>CLAUDE_BIN</code>, tokens, <code>PATH</code>… sont ignorés), et un <code>precheck</code> ne peut pas sortir du dossier de son reviewer. Restent les changements de <b>jugement</b> : pour ceux-là, protéger <code>.reviewme/</code> par <code>CODEOWNERS</code>, ou charger la config depuis la <b>branche de base</b> plutôt que depuis la PR.</div>
+  <div class="tipbox"><span class="chip c-ok">En CI, plus sûr</span> Matérialiser la config depuis la branche de base au lieu de l'arbre de la PR :
+  <pre><code>CFG=$(mktemp -d)
+git fetch --quiet --depth 1 origin develop
+git archive FETCH_HEAD .reviewme | tar -x -C "$CFG" --strip-components=1
+export REVIEWME_CONFIG_HOME="$CFG"</code></pre>
+  La PR ne peut alors plus influencer sa propre review, même avant merge.</div>
 
   <h3>Les deux autres, en une commande</h3>
   <div class="card twrap"><table>
