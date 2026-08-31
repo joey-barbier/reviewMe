@@ -45,6 +45,30 @@ stack par défaut est macOS :
         # Secrets : jamais en clair ici, déclarés dans les Secrets Bitrise de l'app
 ```
 
+## Variante la plus simple : la config dans le dépôt reviewé
+
+Si le projet porte sa propre configuration (`.reviewme/` à sa racine), il n'y a **rien à
+cloner en plus** : le dépôt est déjà là, on pointe dedans.
+
+```bash
+# 1. Outils
+curl -fsSL https://claude.ai/install.sh | bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2. Le moteur (dépôt public, aucun credential)
+git clone --quiet --depth 1 <url-du-moteur> /tmp/reviewme && cd /tmp/reviewme && uv sync
+
+# 3. La config vient du dépôt reviewé
+export REVIEWME_CONFIG_HOME="$BITRISE_SOURCE_DIR/.reviewme"
+export PROJECT=mon-projet
+export REPO_PATH="$BITRISE_SOURCE_DIR"
+uv run reviewme review --pr "$PR"
+```
+
+⚠️ Protéger `.reviewme/` par une entrée `CODEOWNERS` : sans ça, une PR peut modifier la
+configuration qui la juge.
+
 ## Variables
 
 | Variable | Origine | Rôle |

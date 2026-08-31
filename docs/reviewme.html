@@ -303,18 +303,47 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
     <tr><td class="wrap-first"><b>Aucune config</b><br>mode simple</td><td>Rien — les prompts du moteur</td><td>Démarrer, tester la chaîne. Aucune connaissance des conventions du projet.</td></tr>
   </table></div>
 
-  <h3>La config dans le dépôt reviewé</h3>
-  <p><code>init-project</code> crée directement au bon endroit :</p>
+  <h3>Exemple complet : la config dans le dépôt reviewé</h3>
+  <p>Quatre étapes, une seule fois. C'est la forme la plus simple pour démarrer sur un projet.</p>
+
+  <p><b>1 · Créer le squelette</b> — <code>init-project</code> écrit directement au bon endroit :</p>
   <pre><code>cd mon-projet
 REVIEWME_CONFIG_HOME=$PWD/.reviewme reviewme init-project mon-projet --reviewers tech
 
-.reviewme/projects/mon-projet/common/style.md
-.reviewme/projects/mon-projet/reviewers/tech/{reviewer.toml, system.md}</code></pre>
-  <p>En CI, le dépôt est déjà cloné : il suffit de pointer dedans, sans rien récupérer de plus.</p>
+.reviewme/projects/mon-projet/
+  common/style.md                        langue, ton, format des remarques
+  reviewers/tech/reviewer.toml           mode de sortie, déclencheur, conventions à lire
+  reviewers/tech/system.md               la persona</code></pre>
+
+  <p><b>2 · Dire où sont les conventions</b> — dans <code>reviewers/tech/reviewer.toml</code> :</p>
+  <pre><code>output_mode = "inline"
+priority    = 10
+
+[context]
+read = ["AGENTS.md", "CONTRIBUTING.md", "docs/"]   # lus à la source à chaque review</code></pre>
+
+  <p><b>3 · Adapter la persona</b> — <code>reviewers/tech/system.md</code>, en ajoutant ce qui est propre au projet :</p>
+  <pre><code>## Contexte de ce projet
+API Vapor (Swift), `StrictConcurrency` activé : signale tout état non-`Sendable`
+capturé dans un contexte `async`. Requêtes N+1 et migrations non idempotentes
+sont des `BLOCKER` ici.</code></pre>
+
+  <p><b>4 · Brancher la CI</b> — le dépôt est déjà cloné, il suffit de pointer dedans :</p>
   <pre><code>export REVIEWME_CONFIG_HOME="$CLONE_DU_PROJET/.reviewme"
 export PROJECT=mon-projet
-reviewme review --pr "$PR"</code></pre>
+export GITHUB_TOKEN="$TOKEN_CI"
+export REPO_PATH="$CLONE_DU_PROJET"
+
+reviewme review --pr "$PR" --dry-run     # retirer --dry-run une fois calibré</code></pre>
+  <p>Rien à cloner en plus, aucun credential supplémentaire. Recette complète pour Bitrise : <code>deploy/bitrise-step.md</code> ; pour GitHub Actions : <code>deploy/github-actions/</code>.</p>
   <div class="warnbox"><span class="chip c-ko">Le risque à couvrir</span> Si la config vit dans le dépôt reviewé, <b>une PR peut modifier sa propre review</b> — adoucir une persona, désactiver un reviewer. Protéger <code>.reviewme/</code> par une entrée <code>CODEOWNERS</code>, ou choisir le dépôt d'instance dédié quand l'enjeu le justifie.</div>
+
+  <h3>Les deux autres, en une commande</h3>
+  <div class="card twrap"><table>
+    <tr><th>Stratégie</th><th>Mise en place</th></tr>
+    <tr><td class="wrap-first"><b>Dépôt d'instance dédié</b></td><td><code>mkdir ~/dev/reviewme-monprojet &amp;&amp; cd $_ &amp;&amp; git init</code><br><code>export REVIEWME_CONFIG_HOME=$PWD</code><br><code>reviewme init-project mon-repo --reviewers tech,i18n</code><br>Puis <code>PROJECT=mon-repo</code> au lancement.</td></tr>
+    <tr><td class="wrap-first"><b>Aucune config</b></td><td><code>reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code><br>Ni <code>PROJECT</code> ni <code>REVIEWME_CONFIG_HOME</code> : persona générique du moteur.</td></tr>
+  </table></div>
 
   <h2>Une instance = un dépôt de config</h2>
   <p>Une organisation ne veut ni <b>forker le moteur</b> (il faudrait rebaser à chaque évolution), ni committer ses personas et consignes internes dans le dépôt du moteur. La config de projets vit donc dans <b>son propre dépôt</b>, relié par une seule variable :</p>
