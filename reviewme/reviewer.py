@@ -120,7 +120,9 @@ def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
         # Persona : auto-suffisant via system.md par défaut ; --agent seulement si configuré
         if config.claude_agent:
             cmd.extend(["--agent", config.claude_agent])
-        model = os.environ.get("CLAUDE_MODEL")
+        # Priorité : le reviewer d'abord (un relecteur factuel n'a pas besoin du même
+        # modèle qu'une analyse d'architecture), puis CLAUDE_MODEL, puis le défaut de la CLI.
+        model = spec.model or os.environ.get("CLAUDE_MODEL", "")
         if model:
             cmd.extend(["--model", model])
         budget = spec.budget(config)
@@ -146,7 +148,11 @@ def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
                 cache_read = usage.get("cache_read_input_tokens", 0)
                 cache_create = usage.get("cache_creation_input_tokens", 0)
                 raw_input = usage.get("input_tokens", 0)
+                # `modelUsage` est indexé par nom de modèle : c'est la seule source fiable
+                # de ce qui a RÉELLEMENT répondu (une passerelle d'entreprise peut router
+                # vers autre chose que ce qui a été demandé).
                 metadata = {
+                    "model": ", ".join((data.get("modelUsage") or {}).keys()) or "?",
                     "cost_usd": data.get("total_cost_usd", 0),
                     "duration_ms": data.get("duration_ms", 0),
                     "total_turns": data.get("num_turns", 0),

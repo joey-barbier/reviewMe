@@ -105,6 +105,7 @@ projets — deux équipes sur deux produits n'ont pas les mêmes exigences.
 ```toml
 output_mode = "inline"      # inline | global | mixed
 priority    = 10            # ordre d'exécution (petit = prioritaire)
+# model     = "..."         # modèle de CE reviewer ; vide = CLAUDE_MODEL, sinon défaut CLI
 # requires  = ["jira_ticket"]   # contexte obligatoire, sinon le reviewer est skippé
 # precheck  = "precheck.py"     # script déterministe : les faits avant le LLM
 # enabled   = false             # en sommeil sans supprimer le dossier

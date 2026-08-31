@@ -1,6 +1,7 @@
 # Reviewer technique : architecture, sécurité, performance, fiabilité, conventions.
 output_mode = "inline"     # findings ancrés sur les lignes du diff
 priority = 10              # passe en premier (le plus utile si le budget vient à manquer)
+# model = "claude-opus-4-8"  # modèle de CE reviewer ; vide = CLAUDE_MODEL, sinon défaut CLI
 # when.paths absent = se déclenche sur toute PR
 
 # enabled = false        # met ce reviewer en sommeil sans supprimer son dossier

@@ -77,9 +77,9 @@ def _run_one(spec: ReviewerSpec, pr_number: int, title: str, diff: str,
             extra = f"{extra}\n\n{facts}" if extra else facts
 
     result = run_reviewer(pr_number, title, diff, config, spec=spec, extra_context=extra)
-    logger.info("PR #%s [%s] : %d findings, parsed=%s, coût $%.4f",
+    logger.info("PR #%s [%s] : %d findings, parsed=%s, modèle=%s, coût $%.4f",
                 pr_number, spec.id, len(result.findings), result.parsed_ok,
-                result.metadata.get("cost_usd", 0))
+                result.metadata.get("model", "?"), result.metadata.get("cost_usd", 0))
     return spec, result
 
 

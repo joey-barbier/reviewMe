@@ -71,6 +71,8 @@ class ReviewerSpec:
     requires: tuple[str, ...] = ()         # contextes obligatoires, ex. ("jira_ticket",)
     priority: int = 100                    # ordre d'exécution : petit = prioritaire (D8)
     max_budget_usd: float | None = None    # None = budget global de la Config
+    model: str = ""                        # modèle LLM de CE reviewer. Vide = CLAUDE_MODEL,
+                                           # sinon le défaut de la CLI.
     precheck: str = ""                     # script déterministe optionnel (D7)
     common: str = ""                       # consignes communes du projet (langue, ton, format)
     directory: Path | None = None          # dossier du reviewer (résolution du precheck)
@@ -163,6 +165,7 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
         requires=tuple(data.get("requires", ()) or ()),
         priority=int(data.get("priority", 100)),
         max_budget_usd=float(budget) if budget is not None else None,
+        model=str(data.get("model", "")),
         precheck=str(data.get("precheck", "")),
         common=common,
         directory=rdir,

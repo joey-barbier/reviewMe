@@ -236,7 +236,7 @@ export REVIEWME_CONFIG_HOME=$PWD
     <tr><td>CLAUDE_AGENT</td><td><i>(vide)</i></td><td>Vide = persona auto-suffisant (<code>config/prompts/system.md</code>)</td></tr>
     <tr><td>CLAUDE_BIN</td><td><i>(vide)</i></td><td>Binaire de la CLI de review. Vide = <code>claude</code> du PATH ; sinon un wrapper compatible.</td></tr>
     <tr><td>ANTHROPIC_BASE_URL</td><td>—</td><td>Passerelle interne (proxy compatible Anthropic). Héritée telle quelle par <code>claude -p</code>.</td></tr>
-    <tr><td>CLAUDE_MODEL</td><td><i>(vide)</i></td><td>Modèle explicite (sinon défaut CLI)</td></tr>
+    <tr><td>CLAUDE_MODEL</td><td><i>(vide)</i></td><td>Modèle par défaut. Un reviewer peut le surcharger avec <code>model</code> dans son <code>reviewer.toml</code>.</td></tr>
     <tr><td>ANTHROPIC_API_KEY</td><td>—</td><td>Auth Claude en session non interactive (VPS/CI)</td></tr>
     <tr><td>WEBHOOK_SECRET</td><td>—</td><td><b>Obligatoire</b> pour le webhook (HMAC) — fail-closed sinon</td></tr>
     <tr><td>DRY_RUN</td><td><code>false</code></td><td><code>true</code> = ne poste rien, log seulement</td></tr>

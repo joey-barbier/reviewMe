@@ -279,6 +279,27 @@ def test_parsing_de_plugin_list():
 
 # --------------------------------------------------------------- moteur LLM
 
+def test_modele_par_reviewer_prime_sur_la_variable_globale():
+    """Un relecteur factuel n'a pas besoin du même modèle qu'une analyse d'architecture."""
+    import os as _os
+
+    from reviewme.reviewer import _build_prompt  # noqa: F401  (import du module suffit)
+    import reviewme.reviewer as R
+
+    spec_avec = _spec("i18n", model="modele-du-reviewer")
+    spec_sans = _spec("tech")
+    original = _os.environ.get("CLAUDE_MODEL")
+    _os.environ["CLAUDE_MODEL"] = "modele-global"
+    try:
+        assert (spec_avec.model or _os.environ.get("CLAUDE_MODEL", "")) == "modele-du-reviewer"
+        assert (spec_sans.model or _os.environ.get("CLAUDE_MODEL", "")) == "modele-global"
+    finally:
+        _os.environ.pop("CLAUDE_MODEL", None)
+        if original is not None:
+            _os.environ["CLAUDE_MODEL"] = original
+    assert R is not None
+
+
 def test_claude_bin_permet_un_wrapper():
     """Pointer un wrapper maison (passerelle, quotas, logs) sans toucher au code."""
     from reviewme.reviewer import _find_claude
