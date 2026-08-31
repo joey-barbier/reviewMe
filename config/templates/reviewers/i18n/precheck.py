@@ -20,6 +20,13 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
+#: Dossiers jamais scannés : dépendances, artefacts de build, outillage local. Sans ça, un
+#: dépôt iOS remonte les localisations de ses paquets tiers (et de tout worktree présent).
+_IGNORES = frozenset({
+    ".git", ".claude", ".build", "build", "DerivedData", "checkouts",
+    "Pods", "Carthage", "node_modules", "vendor", "dist", ".venv",
+})
+
 MAX_FILES = 400          # garde-fou : au-delà, le dépôt n'est pas structuré comme prévu
 MAX_REPORTED = 25        # au-delà, on résume : un mur de clés n'aide personne
 
@@ -56,23 +63,33 @@ def read_keys(path: Path) -> set[str]:
     return set()
 
 
-def detect(path: Path) -> tuple[str, str] | None:
-    """(langue, bundle) d'un fichier de localisation, ou None si non reconnu."""
-    posix = "/" + path.as_posix().lstrip("/")
+def detect(path: Path, root: Path) -> tuple[str, str] | None:
+    """(langue, bundle) d'un fichier de localisation, ou None si non reconnu.
+
+    Le « bundle » est le CHEMIN du fichier privé de son segment de langue — pas son simple
+    nom. Un dépôt peut contenir plusieurs `InfoPlist.strings` ou `Localizable.strings` dans
+    des cibles différentes : les regrouper par nom ferait apparaître comme « manquantes »
+    toutes les clés d'un bundle dans les langues d'un autre.
+    """
+    rel = path.relative_to(root).as_posix()
+    posix = "/" + rel
 
     if m := _IOS_LANG_RE.search(posix):
         lang = m.group(1)
-        return (("en" if lang.lower() in ("base", "en") else lang), path.name)
+        bundle = rel.replace(f"{lang}.lproj/", "", 1)
+        return (("en" if lang.lower() in ("base", "en") else lang), bundle)
 
     if path.name.startswith("strings") and path.suffix == ".xml":
         if m := _ANDROID_LANG_RE.search(posix):
-            return (m.group(1) or "default", path.name)
+            segment = f"values-{m.group(1)}/" if m.group(1) else "values/"
+            return (m.group(1) or "default", rel.replace(segment, "", 1))
 
     if path.suffix == ".json":
         if m := _WEB_LANG_RE.search(posix):
-            return (m.group(1), path.name)
+            lang = m.group(1)
+            return (lang, rel.replace(f"/{lang}/", "/", 1).replace(f"/{lang}.json", "/*.json", 1))
         if re.fullmatch(r"[a-z]{2}([-_][A-Za-z]{2})?", path.stem):
-            return (path.stem, path.parent.name or "locales")
+            return (path.stem, rel.replace(path.name, "*.json", 1))
     return None
 
 
@@ -82,10 +99,9 @@ def collect(repo: Path) -> dict[str, dict[str, set[str]]]:
     seen = 0
     for pattern in ("**/*.strings", "**/strings*.xml", "**/*.json"):
         for path in repo.glob(pattern):
-            if not path.is_file() or any(p in {".git", "node_modules", "build", "Pods",
-                                               ".build", "vendor", "dist"} for p in path.parts):
+            if not path.is_file() or any(p in _IGNORES for p in path.parts):
                 continue
-            found = detect(path)
+            found = detect(path, repo)
             if not found:
                 continue
             lang, bundle = found
