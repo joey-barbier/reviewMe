@@ -92,6 +92,14 @@ td.wrap-first:first-child { white-space: normal; }
   nav a { font-size: 12.5px; padding: 5px 9px; margin: 0; }
   main { padding: 22px 18px 60px; }
 }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 16px; }
+.tabs button { font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  padding: 8px 14px; border: var(--border); border-radius: 3px; background: var(--card);
+  color: var(--ink); box-shadow: var(--shadow-sm); }
+.tabs button[aria-selected="true"] { background: var(--accent); }
+.tabs button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tabpanel[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -179,7 +187,7 @@ td.wrap-first:first-child { white-space: normal; }
   <h2>Installer et déployer</h2>
   <div class="card twrap"><table>
     <tr><th>Je veux…</th><th>Faire</th></tr>
-    <tr><td class="wrap-first">Essayer sans rien configurer</td><td><code>reviewme review --repo O/R --pr N --dry-run</code></td></tr>
+    <tr><td class="wrap-first">Essayer sans rien configurer</td><td><code>reviewme review --repo O/R --pr N --dry-run</code> — cf. <a href="#demarrer">Démarrer</a>, onglet « juste un essai »</td></tr>
     <tr><td class="wrap-first">Une config qui vit avec le code</td><td><code>REVIEWME_CONFIG_HOME=$CLONE/.reviewme</code></td></tr>
     <tr><td class="wrap-first">Une config partagée entre dépôts</td><td>Un dépôt d'instance, plusieurs dossiers sous <code>projects/</code></td></tr>
     <tr><td class="wrap-first">Un seul clone en CI</td><td><code>git submodule add &lt;moteur&gt; .core</code> dans l'instance</td></tr>
@@ -208,13 +216,63 @@ td.wrap-first:first-child { white-space: normal; }
     <tr><td>Accès au modèle</td><td><code>ANTHROPIC_API_KEY</code>, ou une passerelle d'entreprise (<code>ANTHROPIC_BASE_URL</code>)</td></tr>
   </table></div>
 
-  <h2>Trois façons de le faire tourner</h2>
-  <div class="card twrap"><table>
-    <tr><th>Contexte</th><th>Comment</th></tr>
-    <tr><td class="wrap-first"><b>En local</b><br>deux clones</td><td><code>git clone &lt;moteur&gt; ~/dev/reviewMe &amp;&amp; uv sync</code><br><code>git clone &lt;instance&gt; ~/dev/mon-instance</code><br><code>cd ~/dev/mon-instance &amp;&amp; cp .env.example .env &amp;&amp; ./reviewme projects</code><br><span class="chip c-mut">note</span> le lanceur cherche le moteur dans <code>REVIEWME_CORE</code>, puis <code>./.core</code>, puis un clone voisin</td></tr>
-    <tr><td class="wrap-first"><b>En CI</b><br>un seul clone</td><td><code>git submodule add &lt;moteur&gt; .core</code> une fois, dans l'instance<br><code>git clone --recurse-submodules &lt;instance&gt; config</code><br><code>cd config &amp;&amp; ./reviewme review --pr "$PR"</code><br><span class="chip c-mut">note</span> aucune variable à poser ; sans <code>.venv</code> le lanceur passe par <code>uv run</code></td></tr>
-    <tr><td class="wrap-first"><b>Sans instance</b><br>mode simple</td><td>Un dépôt, un reviewer, pas de personas spécialisées :<br><code>uv run reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code><br><span class="chip c-mut">note</span> reviewer issu du squelette <code>config/templates/</code></td></tr>
-  </table></div>
+  <h2>Je veux configurer…</h2>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true"  aria-controls="t-local">mon poste</button>
+    <button role="tab" aria-selected="false" aria-controls="t-ci">une CI</button>
+    <button role="tab" aria-selected="false" aria-controls="t-essai">juste un essai</button>
+  </div>
+
+  <div class="tabpanel" id="t-local" role="tabpanel">
+    <p>Deux clones : le moteur d'un côté, votre instance de l'autre.</p>
+    <pre><code>git clone &lt;moteur&gt; ~/dev/reviewMe &amp;&amp; cd ~/dev/reviewMe
+uv sync                                   # + --extra github-app pour l'auth GitHub App
+npm install -g @anthropic-ai/claude-code
+
+git clone &lt;instance&gt; ~/dev/mon-instance &amp;&amp; cd ~/dev/mon-instance
+cp .env.example .env                      # GITHUB_TOKEN, GITHUB_REPO, REPO_PATH
+
+./reviewme projects
+PROJECT=mon-repo ./reviewme review --pr 42 --dry-run</code></pre>
+    <p>Le lanceur cherche le moteur dans <code>REVIEWME_CORE</code>, puis <code>./.core</code>, puis un clone voisin. Sinon : <code>export REVIEWME_CORE=~/dev/reviewMe</code>.</p>
+    <div class="card twrap"><table>
+      <tr><th>Variable</th><th>Valeur</th></tr>
+      <tr><td class="wrap-first"><code>GITHUB_TOKEN</code></td><td>PAT fine-grained, <b>Pull requests : R/W</b> sur le dépôt cible</td></tr>
+      <tr><td class="wrap-first"><code>GITHUB_REPO</code></td><td><code>owner/repo</code></td></tr>
+      <tr><td class="wrap-first"><code>REPO_PATH</code></td><td>Le clone local que l'agent explore</td></tr>
+      <tr><td class="wrap-first"><code>PROJECT</code></td><td>Le projet de votre instance à utiliser</td></tr>
+    </table></div>
+  </div>
+
+  <div class="tabpanel" id="t-ci" role="tabpanel" hidden>
+    <p>Un seul clone : l'instance embarque le moteur en submodule et <b>épingle sa version</b>.</p>
+    <pre><code># une fois, dans le dépôt d'instance
+git submodule add &lt;moteur&gt; .core
+git commit -m "add(core) - moteur épinglé"
+
+# dans le job CI
+git clone --recurse-submodules &lt;instance&gt; config
+cd config &amp;&amp; ./reviewme review --pr "$PR"</code></pre>
+    <p>Aucune variable à poser pour trouver le moteur. Sans <code>.venv</code>, le lanceur passe par <code>uv run</code> : <code>uv</code> est la seule dépendance.</p>
+    <div class="card twrap"><table>
+      <tr><th>À prévoir</th><th>Pourquoi</th></tr>
+      <tr><td class="wrap-first">Un token dédié</td><td>Fine-grained sur le seul dépôt cible. Ne pas réutiliser un token qui a les droits de push.</td></tr>
+      <tr><td class="wrap-first">Secrets non exposés aux PR</td><td>Beaucoup de CI masquent les secrets sur les builds déclenchés par une PR. Déclencher par API contourne.</td></tr>
+      <tr><td class="wrap-first">Version épinglée</td><td>Cloner un tag, jamais la branche par défaut : le job porte des secrets.</td></tr>
+      <tr><td class="wrap-first">Passerelle LLM</td><td><code>ANTHROPIC_BASE_URL</code> + <code>ANTHROPIC_AUTH_TOKEN</code>, hérités par le sous-processus.</td></tr>
+    </table></div>
+    <p>Recettes complètes : <code>deploy/bitrise-step.md</code> et <code>deploy/github-actions/</code>.</p>
+  </div>
+
+  <div class="tabpanel" id="t-essai" role="tabpanel" hidden>
+    <p>Aucune instance, aucune config : un reviewer générique pour voir ce que ça donne.</p>
+    <pre><code>git clone &lt;moteur&gt; reviewme &amp;&amp; cd reviewme &amp;&amp; uv sync
+cp .env.example .env                      # GITHUB_TOKEN suffit
+
+uv run reviewme review --repo owner/repo --pr 1234 --dry-run</code></pre>
+    <p>Ni <code>PROJECT</code> ni <code>REVIEWME_CONFIG_HOME</code>. Le reviewer vient du squelette <code>config/templates/</code> : il ne connaît pas vos conventions, mais la chaîne complète est testée.</p>
+    <div class="tipbox"><span class="chip c-ok">Ensuite</span> Quand le résultat vous convient, créez une instance (ci-dessous) et écrivez la persona de votre projet.</div>
+  </div>
 
   <h2>Créer une instance</h2>
   <pre><code>mkdir ~/dev/mon-instance &amp;&amp; cd ~/dev/mon-instance &amp;&amp; git init
@@ -679,6 +737,20 @@ data/      state.json  reviews/  reviews.log   (gitignoré — hors OSS)</code><
     }
     addEventListener("hashchange", maj);
     maj();
+
+    // Onglets « Je veux configurer… » : un seul panneau visible à la fois.
+    document.querySelectorAll(".tabs").forEach(function (barre) {
+      var boutons = barre.querySelectorAll("button");
+      barre.addEventListener("click", function (e) {
+        var cible = e.target.closest("button");
+        if (!cible) return;
+        boutons.forEach(function (b) {
+          var actif = b === cible;
+          b.setAttribute("aria-selected", actif);
+          document.getElementById(b.getAttribute("aria-controls")).hidden = !actif;
+        });
+      });
+    });
   })();
 </script>
 </body>
