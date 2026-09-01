@@ -92,6 +92,15 @@ def _build_prompt(pr_number: int, pr_title: str, diff_path: str, config: Config,
     )
 
 
+def pick_model(spec: ReviewerSpec) -> str:
+    """Modèle à utiliser pour ce reviewer, ou "" pour laisser la CLI décider.
+
+    Priorité : le reviewer d'abord — un relecteur factuel n'a pas besoin du même modèle
+    qu'une analyse d'architecture — puis `CLAUDE_MODEL`, puis le défaut de la CLI.
+    """
+    return spec.model or os.environ.get("CLAUDE_MODEL", "")
+
+
 def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
                spec: ReviewerSpec | None = None, extra_context: str = "") -> ReviewResult:
     """Lance la review d'UN reviewer et renvoie un ReviewResult (findings + metadata).
@@ -120,9 +129,7 @@ def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
         # Persona : auto-suffisant via system.md par défaut ; --agent seulement si configuré
         if config.claude_agent:
             cmd.extend(["--agent", config.claude_agent])
-        # Priorité : le reviewer d'abord (un relecteur factuel n'a pas besoin du même
-        # modèle qu'une analyse d'architecture), puis CLAUDE_MODEL, puis le défaut de la CLI.
-        model = spec.model or os.environ.get("CLAUDE_MODEL", "")
+        model = pick_model(spec)
         if model:
             cmd.extend(["--model", model])
         budget = spec.budget(config)

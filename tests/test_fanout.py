@@ -352,21 +352,19 @@ def test_modele_par_reviewer_prime_sur_la_variable_globale():
     """Un relecteur factuel n'a pas besoin du même modèle qu'une analyse d'architecture."""
     import os as _os
 
-    import reviewme.reviewer as R
-    from reviewme.reviewer import _build_prompt
+    from reviewme.reviewer import pick_model
 
-    spec_avec = _spec("i18n", model="modele-du-reviewer")
-    spec_sans = _spec("tech")
     original = _os.environ.get("CLAUDE_MODEL")
     _os.environ["CLAUDE_MODEL"] = "modele-global"
     try:
-        assert (spec_avec.model or _os.environ.get("CLAUDE_MODEL", "")) == "modele-du-reviewer"
-        assert (spec_sans.model or _os.environ.get("CLAUDE_MODEL", "")) == "modele-global"
+        assert pick_model(_spec("i18n", model="modele-du-reviewer")) == "modele-du-reviewer"
+        assert pick_model(_spec("tech")) == "modele-global"
+        _os.environ.pop("CLAUDE_MODEL")
+        assert pick_model(_spec("tech")) == ""          # vide : la CLI décide
     finally:
         _os.environ.pop("CLAUDE_MODEL", None)
         if original is not None:
             _os.environ["CLAUDE_MODEL"] = original
-    assert R is not None
 
 
 def test_claude_bin_permet_un_wrapper():
