@@ -23,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .config import Config
 from .github_client import GitHubClient
+from .history import build_history_context
 from .logging_ import save_review
 from .projects import (
     ProjectConfigError,
@@ -54,7 +55,8 @@ def _gather_context(pr: dict, config: Config, logger: logging.Logger) -> tuple[d
 
 
 def _run_one(spec: ReviewerSpec, pr_number: int, title: str, diff: str,
-             config: Config, context: dict, logger: logging.Logger):
+             config: Config, context: dict, logger: logging.Logger,
+             historique: str = ""):
     """Exécute un reviewer (précheck déterministe puis LLM). Renvoie (spec, result)."""
     # Plugins déclarés par le reviewer : skills et agents dont il a besoin (installés une
     # fois, puis réutilisés). Un échec ici ne concerne QUE ce reviewer.
@@ -64,6 +66,10 @@ def _run_one(spec: ReviewerSpec, pr_number: int, title: str, diff: str,
         ensure_plugins(spec, _find_claude(config), logger)
 
     blocks = [context[k] for k in spec.requires if k in context]
+
+    # Ce qui a déjà été dit sur cette PR, et ce qu'on y a répondu.
+    if historique:
+        blocks.append(historique)
 
     # Conventions du dépôt : déclarées dans reviewer.toml, lues à la source (D13).
     from .repo_context import build_repo_context
@@ -148,12 +154,16 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
                     pr_number, diff_size_kb, project.name, [s.id for s in selected])
 
         # --- Exécution parallèle (D5) : chaque reviewer est un subprocess indépendant ---
+        historique = build_history_context(gh, pr_number, logger)
+
         outcomes: list[tuple[ReviewerSpec, object]] = []
         if len(selected) == 1:
-            outcomes.append(_run_one(selected[0], pr_number, title, diff, config, context, logger))
+            outcomes.append(_run_one(selected[0], pr_number, title, diff, config, context,
+                                     logger, historique))
         else:
             with ThreadPoolExecutor(max_workers=min(len(selected), 4)) as pool:
-                futures = [pool.submit(_run_one, s, pr_number, title, diff, config, context, logger)
+                futures = [pool.submit(_run_one, s, pr_number, title, diff, config, context,
+                                       logger, historique)
                            for s in selected]
                 for fut in futures:
                     try:

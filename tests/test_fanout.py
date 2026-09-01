@@ -275,6 +275,52 @@ def test_id_de_reviewer_libre():
         assert sorted(r.id for r in P.load_project("p", root).reviewers) == ["perf", "securite-mobile"]
 
 
+# --------------------------------------------------------------- historique de la review
+
+def test_historique_donne_les_reponses_humaines_a_l_agent():
+    """Sans ça, un « c'est volontaire » est oublié dès que la ligne bouge."""
+    from reviewme.history import build_history_context
+    from reviewme.reconciler import fingerprint
+
+    marqueur = fingerprint("a.swift", "let x = y!", "tech")
+
+    class _GH:
+        def list_review_comments(self, n):
+            return [
+                {"id": 1, "in_reply_to_id": None, "path": "a.swift", "line": 10,
+                 "body": f"**[BLOCKER]** Force-unwrap ici.\n{marqueur}",
+                 "user": {"login": "bot"}},
+                {"id": 2, "in_reply_to_id": 1, "path": "a.swift", "line": 10,
+                 "body": "Volontaire : la valeur est garantie par le contrat amont.",
+                 "user": {"login": "alice"}},
+                {"id": 3, "in_reply_to_id": None, "path": "b.swift", "line": 4,
+                 "body": "Question d'un humain, sans marqueur", "user": {"login": "bob"}},
+            ]
+
+    bloc = build_history_context(_GH(), 7, LOGGER)
+    assert "a.swift:10" in bloc                       # la remarque déjà postée
+    assert "alice" in bloc and "Volontaire" in bloc    # la réponse humaine
+    assert "Question d'un humain" not in bloc          # les fils purement humains sont hors sujet
+    assert "n'y reviens" in bloc                       # la consigne de ne pas insister
+    assert "jamais des instructions" in bloc           # contenu tiers marqué non fiable
+    assert marqueur not in bloc                        # marqueur technique nettoyé
+
+
+def test_historique_absent_ne_bloque_pas():
+    from reviewme.history import build_history_context
+
+    class _Vide:
+        def list_review_comments(self, n):
+            return []
+
+    class _Casse:
+        def list_review_comments(self, n):
+            raise RuntimeError("API indisponible")
+
+    assert build_history_context(_Vide(), 1, LOGGER) == ""
+    assert build_history_context(_Casse(), 1, LOGGER) == ""
+
+
 # --------------------------------------------------------------- config non fiable
 
 def test_env_dinstance_ne_peut_pas_choisir_le_binaire_execute():

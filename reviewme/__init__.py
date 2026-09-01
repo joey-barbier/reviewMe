@@ -9,6 +9,7 @@ Modules :
   reconciler.py    dédup par fingerprint + validation diff + prepare()/post_all()
   projects.py      config par PROJET + specs de reviewers + sélection (ADR v3)
   precheck.py      script déterministe d'un reviewer (les faits avant le LLM)
+  history.py       fils de discussion de la PR, donnés à l'agent avant qu'il juge
   context/         fournisseurs de contexte externe optionnels (jira.py)
   github_auth.py   PAT ou GitHub App (JWT RS256 -> token d'installation renouvelé)
   run.py           run_review(repo, pr, config) : la fonction commune à toutes les entrées

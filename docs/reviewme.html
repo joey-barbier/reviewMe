@@ -180,6 +180,7 @@ td.wrap-first:first-child { white-space: normal; }
     <tr><th>Je veux…</th><th>Faire</th></tr>
     <tr><td class="wrap-first">Qu'il connaisse nos conventions</td><td><code>[context]</code><br><code>read = ["AGENTS.md", "docs/"]</code><br>Lues dans le dépôt à chaque review, jamais recopiées.</td></tr>
     <tr><td class="wrap-first">Éviter d'injecter un fichier de 30 Ko</td><td>Déclarer le <b>dossier</b> plutôt que le fichier : seul l'inventaire est injecté, l'agent ouvre à la demande.</td></tr>
+    <tr><td class="wrap-first">Qu'il tienne compte des réponses aux commentaires</td><td>Rien à faire — les fils de discussion lui sont donnés à chaque review.</td></tr>
     <tr><td class="wrap-first">Savoir si un chemin déclaré n'existe plus</td><td>Rien à faire — un chemin introuvable sort en <code>WARNING</code>.</td></tr>
     <tr><td class="wrap-first">Qu'il lise le ticket Jira</td><td><code>JIRA_BASE_URL</code>, <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code><br>Absents : le reviewer <code>us</code> est skippé.</td></tr>
     <tr><td class="wrap-first">Changer le ton des remarques</td><td><code>common/style.md</code> — langue, longueur, ce qu'on ne signale jamais.</td></tr>
@@ -566,6 +567,17 @@ cd config && ./reviewme review --pr "$PR_NUMBER"</code></pre>
   <div class="tipbox"><span class="chip c-ok">Propriété clé</span> Le hash porte le <b>contenu de la ligne</b>, pas son numéro : un commit qui décale le code ne recrée aucun commentaire. Le <code>reviewer_id</code> est un préfixe du marqueur et n'entre pas dans le hash. Verrouillé par <code>tests/test_fingerprint_migration.py</code>.</div>
 
   <div class="warnbox"><span class="chip c-ko">Piège</span> <code>REVIEWER_ID</code> doit rester <b>stable dans le temps</b> pour un projet donné : le renommer rend orphelins tous les commentaires déjà postés, qui seront alors <b>reposés en double</b>. Même règle que pour le hash.</div>
+
+  <h2>4 · Ce que l'agent sait de la PR</h2>
+  <p>À chaque review, l'agent reçoit <b>ses remarques précédentes et les réponses humaines</b> — pas seulement le diff.</p>
+  <div class="card twrap"><table>
+    <tr><th>Situation</th><th>Effet</th></tr>
+    <tr><td class="wrap-first">Un point déjà signalé</td><td>Il ne le répète pas : il est déjà visible sur la PR</td></tr>
+    <tr><td class="wrap-first">« C'est volontaire »</td><td>Il n'y revient pas, <b>même si la ligne a bougé</b></td></tr>
+    <tr><td class="wrap-first">Un point corrigé</td><td>Silence — pas de félicitations</td></tr>
+  </table></div>
+  <p>Sans cet historique, un « c'est volontaire » est oublié dès que le code de la ligne change : le fingerprint diffère, et la remarque revient. C'est ce qui fait qu'une équipe finit par couper le bot.</p>
+  <div class="warnbox"><span class="chip c-ko">Contenu tiers</span> Les réponses viennent de développeurs : elles sont injectées comme <b>données</b>, avec la consigne explicite de n'y suivre aucune instruction.</div>
 
   <h2>4 · Cycle de vie des threads</h2>
   <div class="card twrap"><table>
