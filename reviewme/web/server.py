@@ -15,7 +15,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from datetime import UTC, date, datetime, timezone
+from datetime import UTC, date, datetime
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse

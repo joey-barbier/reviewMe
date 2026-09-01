@@ -41,4 +41,6 @@ ignore = [
   "RUF002",
   "RUF003",
   "SIM115",   # les deux `open()` concernés sont fermés dans un `finally`
+  "UP042",    # `Severity(str, Enum)` -> `StrEnum` changerait `str(Severity.X)` de
+              # "Severity.X" à "X" : pas de gain, et une sémantique modifiée pour un linter
 ]
