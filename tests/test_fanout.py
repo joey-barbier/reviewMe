@@ -275,6 +275,51 @@ def test_id_de_reviewer_libre():
         assert sorted(r.id for r in P.load_project("p", root).reviewers) == ["perf", "securite-mobile"]
 
 
+# --------------------------------------------------------------- câblage du contexte
+
+def test_tous_les_blocs_de_contexte_arrivent_dans_le_prompt():
+    """Le vrai risque du fan-out : un bloc calculé mais jamais transmis au modèle.
+
+    Vérifie le câblage complet — conventions du dépôt, faits du precheck, contexte
+    externe, historique — jusqu'au prompt réellement passé à la CLI.
+    """
+    from unittest.mock import patch
+
+    import reviewme.run as R
+
+    capture = {}
+
+    def _faux_reviewer(pr_number, pr_title, pr_diff, config, spec=None, extra_context=""):
+        capture["extra"] = extra_context
+        capture["spec"] = spec
+        return _result([])
+
+    with tempfile.TemporaryDirectory() as tmp:
+        depot = Path(tmp)
+        (depot / "AGENTS.md").write_text("Règle maison : 4 espaces.", encoding="utf-8")
+        rdir = depot / "r"
+        rdir.mkdir()
+        (rdir / "p.py").write_text(
+            "import sys\nd = sys.stdin.read()\n"
+            "print('FAITS: ' + str(len(d.splitlines())) + ' lignes de diff')\n",
+            encoding="utf-8")
+
+        spec = _spec("tech", context_read=("AGENTS.md",), precheck="p.py",
+                     directory=rdir, requires=("jira_ticket",))
+        cfg = _config(repo_path=str(depot))
+
+        with patch.object(R, "run_reviewer", _faux_reviewer):
+            R._run_one(spec, 7, "titre", "+import A\n+import B\n", cfg,
+                       {"jira_ticket": "TICKET: couvre le cas X"}, LOGGER,
+                       historique="HISTORIQUE: alice a répondu")
+
+    extra = capture["extra"]
+    assert "TICKET: couvre le cas X" in extra          # contexte externe (Jira)
+    assert "HISTORIQUE: alice a répondu" in extra      # fils de discussion
+    assert "Règle maison : 4 espaces." in extra        # conventions lues dans le dépôt
+    assert "FAITS: 2 lignes de diff" in extra          # precheck, ET il a reçu le diff
+
+
 # --------------------------------------------------------------- historique de la review
 
 def test_historique_donne_les_reponses_humaines_a_l_agent():
