@@ -8,7 +8,7 @@ modèle garde ce qui demande vraiment du jugement (wording, variables, pluriels,
 Formats reconnus : `.strings` (iOS), `strings.xml` (Android), `.json` (web/JS).
 Sortie : markdown sur stdout, injecté tel quel dans le prompt du reviewer.
 
-Usage : precheck.py --repo /chemin/du/clone
+Usage : precheck.py --repo /chemin/du/clone   (le diff de la PR arrive sur stdin)
 """
 from __future__ import annotations
 

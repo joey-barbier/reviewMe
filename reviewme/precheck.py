@@ -9,8 +9,8 @@ Un reviewer déclare son script dans `reviewer.toml` :
 
     precheck = "precheck.py"
 
-Le script vit dans le dossier du reviewer, reçoit le repo à analyser via `--repo`, et écrit
-sur stdout un bloc markdown injecté tel quel dans le prompt.
+Le script vit dans le dossier du reviewer. Il reçoit le dépôt via `--repo`, **le diff de la
+PR sur stdin**, et écrit sur stdout un bloc markdown injecté tel quel dans le prompt.
 
 ⚠️ SÉCURITÉ : un precheck est du CODE fourni par le projet, exécuté par le core. Sur une
 config contribuée par des équipes, il doit passer par la même revue qu'un changement de
@@ -29,7 +29,8 @@ _TIMEOUT_S = 120
 _MAX_OUTPUT = 20_000  # au-delà, ce n'est plus un « fait établi » mais un dump : on tronque
 
 
-def run_precheck(spec: ReviewerSpec, config: Config, logger: logging.Logger) -> str:
+def run_precheck(spec: ReviewerSpec, config: Config, logger: logging.Logger,
+                 diff: str = "") -> str:
     """Exécute le precheck du reviewer. Renvoie son bloc de faits, ou "" si indisponible.
 
     Ne lève jamais : un precheck cassé dégrade la review (le LLM juge seul), il ne
@@ -56,8 +57,10 @@ def run_precheck(spec: ReviewerSpec, config: Config, logger: logging.Logger) -> 
     cmd = ([sys.executable, str(script)] if script.suffix == ".py" else [str(script)])
     cmd += ["--repo", config.repo_path]
 
+    # Le diff est passé sur stdin : un precheck peut ainsi juger ce que la PR CHANGE, pas
+    # seulement l'état du dépôt. Un script qui ne le lit pas n'est pas gêné.
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True,
+        proc = subprocess.run(cmd, capture_output=True, text=True, input=diff or "",
                               timeout=_TIMEOUT_S, cwd=config.repo_path, check=False)
     except subprocess.TimeoutExpired:
         logger.warning("[%s] precheck : timeout après %ds", spec.id, _TIMEOUT_S)

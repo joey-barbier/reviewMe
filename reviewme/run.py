@@ -77,7 +77,7 @@ def _run_one(spec: ReviewerSpec, pr_number: int, title: str, diff: str,
         # ADR v3 D7 : le déterministe d'abord — ce qu'un script sait prouver ne doit pas être
         # payé au LLM (ex. « clé présente en fr, absente en de »).
         from .precheck import run_precheck
-        facts = run_precheck(spec, config, logger)
+        facts = run_precheck(spec, config, logger, diff)
         if facts:
             extra = f"{extra}\n\n{facts}" if extra else facts
 

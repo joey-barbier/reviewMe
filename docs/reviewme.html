@@ -170,7 +170,8 @@ td.wrap-first:first-child { white-space: normal; }
     <tr><td class="wrap-first">Moins de commentaires par PR</td><td><code>MAX_COMMENTS_PER_PR=5</code><br>Coupe par PR, tous reviewers confondus. Les plus graves d'abord.</td></tr>
     <tr><td class="wrap-first">Moins de remarques incertaines</td><td><code>CONFIDENCE_THRESHOLD=90</code> (défaut 80)</td></tr>
     <tr><td class="wrap-first">Un modèle moins cher pour un reviewer</td><td><code>model = "…"</code> dans son <code>reviewer.toml</code></td></tr>
-    <tr><td class="wrap-first">Ne pas payer un LLM pour un fait vérifiable</td><td><code>precheck = "precheck.py"</code><br>Sa sortie est injectée comme faits établis.</td></tr>
+    <tr><td class="wrap-first">Ne pas payer un LLM pour un fait vérifiable</td><td><code>precheck = "precheck.py"</code><br>Reçoit le diff sur stdin. Sa sortie est injectée comme faits établis.</td></tr>
+    <tr><td class="wrap-first">Un modèle capable pour l'analyse, rapide pour le factuel</td><td><code>model</code> par reviewer. Le modèle réellement utilisé est journalisé (<code>modèle=…</code>) — utile derrière une passerelle.</td></tr>
     <tr><td class="wrap-first">Plafonner la dépense</td><td><code>MAX_BUDGET_USD=3.00</code> — <b>par reviewer</b></td></tr>
   </table></div>
 
@@ -430,7 +431,7 @@ install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code>
     <tr><td class="wrap-first"><code>requires</code></td><td>liste — <code>"jira_ticket"</code></td><td>vide</td><td>Contextes sans lesquels le reviewer est skippé. Valeur inconnue = erreur au chargement</td></tr>
     <tr><td class="wrap-first"><code>model</code></td><td>nom de modèle</td><td>vide → <code>CLAUDE_MODEL</code>, sinon défaut CLI</td><td>Modèle de ce reviewer seulement</td></tr>
     <tr><td class="wrap-first"><code>max_budget_usd</code></td><td>nombre</td><td>vide → <code>MAX_BUDGET_USD</code></td><td>Plafond de coût de ce reviewer</td></tr>
-    <tr><td class="wrap-first"><code>precheck</code></td><td>chemin</td><td>vide</td><td>Script déterministe, <b>confiné au dossier du reviewer</b>. Sa sortie devient des faits établis</td></tr>
+    <tr><td class="wrap-first"><code>precheck</code></td><td>chemin</td><td>vide</td><td>Script déterministe, <b>confiné au dossier du reviewer</b>. Reçoit le dépôt via <code>--repo</code> et <b>le diff sur stdin</b> ; sa sortie devient des faits établis</td></tr>
     <tr><td class="wrap-first"><code>[when] paths</code></td><td>liste de globs</td><td>vide = tourne toujours</td><td>Ne se déclenche que si le diff touche l'un de ces chemins</td></tr>
     <tr><td class="wrap-first"><code>[context] read</code></td><td>liste de chemins</td><td>vide</td><td>Conventions lues dans le dépôt reviewé. Fichier = injecté, dossier = inventaire</td></tr>
     <tr><td class="wrap-first"><code>[plugins] marketplaces</code></td><td>liste</td><td>vide</td><td>Marketplaces Claude Code à déclarer avant installation</td></tr>
