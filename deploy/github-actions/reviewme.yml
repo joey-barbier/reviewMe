@@ -1,14 +1,15 @@
-# Exemple : déclencher ReviewMe en one-shot sur chaque PR via GitHub Actions.
-# À placer dans .github/workflows/ du repo CIBLE (celui dont on review les PR).
+# Déclencher ReviewMe sur chaque PR via GitHub Actions.
+# À placer dans `.github/workflows/` du dépôt CIBLE (celui dont on review les PR).
 #
-# Prérequis (secrets du repo) :
-#   REVIEWME_GITHUB_TOKEN : PAT fine-grained (Pull requests: R/W) — PAS le GITHUB_TOKEN par
-#                            défaut si tu veux que la review déclenche d'autres workflows.
-#   ANTHROPIC_API_KEY      : clé Claude (ou passerelle interne via ANTHROPIC_BASE_URL).
+# Secrets attendus :
+#   REVIEWME_GITHUB_TOKEN : PAT fine-grained, Pull requests R/W sur ce dépôt.
+#                           Pas le GITHUB_TOKEN par défaut, qui ne déclenche pas
+#                           les autres workflows depuis ses commentaires.
+#   ANTHROPIC_API_KEY     : clé du modèle, ou passerelle via ANTHROPIC_BASE_URL.
 #
-# ⚠️ Sécurité : le moteur lit du diff NON FIABLE. `pull_request` (et non
-# `pull_request_target`) garde le token en lecture seule côté fork et n'expose pas les
-# secrets aux PR de forks. Pour reviewer les PR de forks, prévoir une approbation manuelle.
+# ⚠️ Sécurité : le moteur lit un diff NON FIABLE. On utilise `pull_request` et non
+# `pull_request_target` : les secrets ne sont pas exposés aux PR de forks. Pour
+# reviewer les forks, prévoir une approbation manuelle.
 
 name: ReviewMe
 on:
@@ -24,22 +25,37 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
+      # Le dépôt à reviewer : l'agent y lit les fichiers pour contextualiser ses findings.
+      - uses: actions/checkout@v4
+
+      # Le moteur, sur une VERSION ÉPINGLÉE : ce job porte des secrets, ce qui s'y exécute
+      # ne doit pas pouvoir changer entre deux runs sans revue.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0            # historique complet pour le contexte de l'agent
+          repository: joey-barbier/reviewMe
+          ref: v0.3.1
+          path: .reviewme-core
 
       - uses: astral-sh/setup-uv@v5
-      - run: uv sync
+      - run: npm install -g @anthropic-ai/claude-code
 
-      - name: Installer Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Review one-shot de la PR
+      - name: Review de la PR
+        working-directory: .reviewme-core
         env:
           GITHUB_TOKEN: ${{ secrets.REVIEWME_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REPO_PATH: .
-          GUIDELINES_PACK: ios
-          MAX_BUDGET_USD: "10.0"
-        run: uv run reviewme review --repo "${{ github.repository }}" --pr "${{ github.event.pull_request.number }}"
+          REPO_PATH: ${{ github.workspace }}
+
+          # La configuration de review vit dans le dépôt lui-même (.reviewme/).
+          # Pour une instance séparée : cloner ce dépôt et pointer dessus.
+          REVIEWME_CONFIG_HOME: ${{ github.workspace }}/.reviewme
+          PROJECT: mon-repo
+
+          CONFIDENCE_THRESHOLD: "80"
+          MAX_COMMENTS_PER_PR: "10"
+          MAX_BUDGET_USD: "3.00"
+        run: |
+          uv sync --frozen
+          uv run reviewme review --pr "${{ github.event.pull_request.number }}"
+          # Premiers essais : ajouter --dry-run pour ne rien poster.

@@ -52,6 +52,14 @@ consignes internes, sans jamais toucher au moteur.
 Trois façons de relier le moteur et une instance. La doc HTML détaille chacune
 ([`docs/reviewme.html`](docs/reviewme.html) § Installation).
 
+Un script interactif vérifie les prérequis et génère un `.env` :
+
+```sh
+./setup.sh
+```
+
+Sinon, à la main :
+
 **En local — deux clones**
 
 ```sh
