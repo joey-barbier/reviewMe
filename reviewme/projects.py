@@ -54,6 +54,14 @@ _CONTRACT_FILE = CONFIG_DIR / "output-contract.md"
 
 OUTPUT_MODES = ("inline", "global", "mixed")
 
+#: Contextes qu'un reviewer peut exiger via `requires`. Chacun correspond à un fournisseur
+#: dans `reviewme/context/`. Une valeur inconnue est REFUSÉE au chargement : sans ce
+#: contrôle, une faute de frappe (`requires = ["jira"]`) rendrait le reviewer inerte pour
+#: toujours, sans le moindre message.
+KNOWN_CONTEXTS = {
+    "jira_ticket": "Ticket + critères d'acceptation, via l'API Jira (context/jira.py)",
+}
+
 
 class ProjectConfigError(RuntimeError):
     """Config de projet absente ou invalide — on préfère échouer tôt et clairement."""
@@ -147,6 +155,13 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
         raise ProjectConfigError(
             f"reviewer '{reviewer_id}' : output_mode '{mode}' inconnu (attendu : {', '.join(OUTPUT_MODES)})")
 
+    requires = tuple(data.get("requires", ()) or ())
+    inconnus = [r for r in requires if r not in KNOWN_CONTEXTS]
+    if inconnus:
+        raise ProjectConfigError(
+            f"reviewer '{reviewer_id}' : contexte inconnu dans `requires` : "
+            f"{', '.join(inconnus)}. Valeurs possibles : {', '.join(sorted(KNOWN_CONTEXTS))}")
+
     when = data.get("when", {}) or {}
     context = data.get("context", {}) or {}
     plugins = data.get("plugins", {}) or {}
@@ -158,7 +173,7 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
         system_prompt=system_file.read_text(encoding="utf-8"),
         output_mode=mode,
         when_paths=tuple(when.get("paths", ()) or ()),
-        requires=tuple(data.get("requires", ()) or ()),
+        requires=requires,
         priority=int(data.get("priority", 100)),
         max_budget_usd=float(budget) if budget is not None else None,
         model=str(data.get("model", "")),

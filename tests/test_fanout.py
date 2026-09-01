@@ -243,6 +243,30 @@ def test_dry_run_affiche_ce_qui_serait_poste():
     assert "reviewme:" not in joint       # le marqueur technique reste masqué
 
 
+def test_requires_inconnu_est_refuse_au_chargement():
+    """`requires = ["jira"]` au lieu de "jira_ticket" rendrait le reviewer inerte à vie."""
+    import reviewme.projects as P
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        _write_project(root, "p", {"us": ('requires = ["jira"]\n', "persona")})
+        try:
+            P.load_project("p", root)
+        except P.ProjectConfigError as e:
+            assert "jira_ticket" in str(e)      # le message donne la valeur attendue
+        else:
+            raise AssertionError("ProjectConfigError attendue")
+
+
+def test_id_de_reviewer_libre():
+    """Les noms tech/us/i18n sont des conventions, pas des valeurs imposées."""
+    import reviewme.projects as P
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        _write_project(root, "p", {"securite-mobile": ('output_mode = "inline"\n', "persona"),
+                                   "perf": ("", "persona")})
+        assert sorted(r.id for r in P.load_project("p", root).reviewers) == ["perf", "securite-mobile"]
+
+
 # --------------------------------------------------------------- config non fiable
 
 def test_env_dinstance_ne_peut_pas_choisir_le_binaire_execute():
