@@ -100,7 +100,7 @@ première review en `--dry-run` : tout est calculé, rien n'est posté.
 
 ## Les reviewers
 
-Un reviewer = un dossier dans `projects/<repo>/reviewers/`. Sa présence suffit à l'activer
+Un reviewer = un dossier dans `projects/<repo>/reviewers/`. Son **nom de dossier est son id**, libre (`tech`, `us`, `i18n` sont des conventions). Sa présence suffit à l'activer
 (pas de manifeste à tenir à jour) ; `enabled = false` dans son `reviewer.toml` le met en
 sommeil.
 
@@ -120,7 +120,8 @@ projets — deux équipes sur deux produits n'ont pas les mêmes exigences.
 output_mode = "inline"      # inline | global | mixed
 priority    = 10            # ordre d'exécution (petit = prioritaire)
 # model     = "..."         # modèle de CE reviewer ; vide = CLAUDE_MODEL, sinon défaut CLI
-# requires  = ["jira_ticket"]   # contexte obligatoire, sinon le reviewer est skippé
+# requires  = ["jira_ticket"]   # contexte obligatoire, sinon skippé. Seule valeur
+                              # possible à ce jour ; une valeur inconnue est refusée.
 # precheck  = "precheck.py"     # script déterministe : les faits avant le LLM
 # enabled   = false             # en sommeil sans supprimer le dossier
 

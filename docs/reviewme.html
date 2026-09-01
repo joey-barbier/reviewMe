@@ -361,7 +361,23 @@ install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code>
   <p>Les reviewers sont les <b>sous-dossiers de <code>reviewers/</code></b>. Rien à déclarer ailleurs : ajouter un reviewer = créer son dossier. Le mettre en sommeil = <code>enabled = false</code> dans son <code>reviewer.toml</code>.</p>
   <div class="warnbox"><span class="chip c-ko">Piège</span> L'<code>id</code> d'un reviewer entre dans le marqueur de dédup. Le renommer sur un dépôt déjà commenté fait <b>reposter tous ses commentaires en double</b>.</div>
 
-<h2>Où placer votre configuration</h2>
+<h2>Nommer un reviewer</h2>
+  <p>L'<code>id</code> d'un reviewer est le <b>nom de son dossier</b>. Il est libre : <code>tech</code>, <code>us</code> et <code>i18n</code> sont les conventions du squelette, pas des valeurs imposées.</p>
+  <pre><code>reviewers/securite-mobile/     # parfaitement valide
+reviewers/perf/
+reviewers/accessibilite/</code></pre>
+  <p>Aucun code ne dépend de ces noms. Ce qui définit un reviewer, c'est son <code>reviewer.toml</code> et sa persona.</p>
+  <div class="warnbox"><span class="chip c-ko">Une fois choisi, on n'y touche plus</span> L'<code>id</code> entre dans le marqueur de déduplication. Le renommer sur un dépôt déjà commenté rend orphelins tous ses commentaires : ils seront <b>reposés en double</b>.</div>
+
+  <h2>Contextes exigés</h2>
+  <p><code>requires</code> déclare les données externes sans lesquelles un reviewer n'a pas de sens. Absentes, il est <b>skippé</b> — jamais en erreur, les autres continuent.</p>
+  <div class="card twrap"><table>
+    <tr><th>Valeur</th><th>Ce qu'elle apporte</th><th>Fournie par</th></tr>
+    <tr><td class="wrap-first"><code>jira_ticket</code></td><td>Titre, description et critères d'acceptation du ticket lié à la PR</td><td><code>JIRA_BASE_URL</code>, <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code></td></tr>
+  </table></div>
+  <p>Seule valeur à ce jour. Une valeur inconnue est <b>refusée au chargement</b> : sans ce contrôle, <code>requires = ["jira"]</code> rendrait le reviewer inerte à vie, sans le moindre message.</p>
+
+  <h2>Où placer votre configuration</h2>
   <p>La config de projets vit là où <code>REVIEWME_CONFIG_HOME</code> pointe — c'est un simple chemin, donc trois stratégies sont possibles. Elles ne s'excluent pas : on démarre souvent par la dernière et on remonte.</p>
   <div class="card twrap"><table>
     <tr><th>Stratégie</th><th>Où vit la config</th><th>Quand la choisir</th></tr>
