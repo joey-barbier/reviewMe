@@ -102,6 +102,7 @@ td.wrap-first:first-child { white-space: normal; }
   <div class="grp">Prise en main</div>
   <a href="#overview" class="on">Vue d'ensemble</a>
   <a href="#demarrer">Démarrer</a>
+  <a href="#recettes">Recettes</a>
   <div class="grp">Comprendre</div>
   <a href="#reviewers">Reviewers</a>
   <a href="#projets">Projets &amp; instances</a>
@@ -133,7 +134,61 @@ td.wrap-first:first-child { white-space: normal; }
     <tr><td class="wrap-first">Identité</td><td>PAT, ou GitHub App dédiée (<code>&lt;slug&gt;[bot]</code>) à token renouvelé</td></tr>
   </table></div>
 
+  <div class="tipbox"><span class="chip c-ok">Vous cherchez un réglage ?</span> <a href="#recettes">Recettes</a> liste les besoins courants et la ligne à écrire — déclenchement, bruit, coût, contexte, déploiement.</div>
   <div class="tipbox"><span class="chip c-ok">Ordre de grandeur</span> Une review coûte <b>0,3 à 2,4 $</b> et dure <b>1 à 8 minutes</b> selon la taille du diff — le coût suit la <b>taille du diff</b>, pas le nombre de reviewers. Toujours commencer en <code>--dry-run</code> : tout est calculé et affiché, rien n'est posté.</div>
+</section>
+
+<section class="page" id="recettes">
+  <span class="eyebrow">Prise en main</span>
+  <h1>Recettes</h1>
+  <p class="tl">Ce que vous voulez faire, et la ligne à écrire.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Presque tout se règle dans <code>reviewer.toml</code> ou par une variable d'environnement. Aucun code à écrire.</div>
+
+  <h2>Déclencher</h2>
+  <div class="card twrap"><table>
+    <tr><th>Je veux…</th><th>Faire</th></tr>
+    <tr><td class="wrap-first">Lancer <code>i18n</code> seulement si des traductions changent</td><td><code>reviewer.toml</code> :<br><code>[when]</code><br><code>paths = ["**/*.lproj/*.strings"]</code></td></tr>
+    <tr><td class="wrap-first">Lancer un reviewer sur toutes les PR</td><td>Ne pas mettre de section <code>[when]</code>. C'est le défaut.</td></tr>
+    <tr><td class="wrap-first">Un reviewer qui exige un ticket Jira</td><td><code>requires = ["jira_ticket"]</code><br>Sans ticket détecté : skippé, jamais en erreur.</td></tr>
+    <tr><td class="wrap-first">Désactiver un reviewer sans supprimer son dossier</td><td><code>enabled = false</code></td></tr>
+    <tr><td class="wrap-first">Ajouter un reviewer</td><td>Créer son dossier dans <code>reviewers/</code>. Rien à déclarer ailleurs.</td></tr>
+    <tr><td class="wrap-first">Choisir l'ordre d'exécution</td><td><code>priority = 10</code> — petit = d'abord</td></tr>
+  </table></div>
+
+  <h2>Régler le bruit et le coût</h2>
+  <div class="card twrap"><table>
+    <tr><th>Je veux…</th><th>Faire</th></tr>
+    <tr><td class="wrap-first">Voir ce qui serait posté, sans rien poster</td><td><code>--dry-run</code>, ou <code>DRY_RUN=true</code><br>Chaque finding est affiché : fichier, ligne, confiance, message.</td></tr>
+    <tr><td class="wrap-first">Moins de commentaires par PR</td><td><code>MAX_COMMENTS_PER_PR=5</code><br>Coupe par PR, tous reviewers confondus. Les plus graves d'abord.</td></tr>
+    <tr><td class="wrap-first">Moins de remarques incertaines</td><td><code>CONFIDENCE_THRESHOLD=90</code> (défaut 80)</td></tr>
+    <tr><td class="wrap-first">Un modèle moins cher pour un reviewer</td><td><code>model = "…"</code> dans son <code>reviewer.toml</code></td></tr>
+    <tr><td class="wrap-first">Ne pas payer un LLM pour un fait vérifiable</td><td><code>precheck = "precheck.py"</code><br>Sa sortie est injectée comme faits établis.</td></tr>
+    <tr><td class="wrap-first">Plafonner la dépense</td><td><code>MAX_BUDGET_USD=3.00</code> — <b>par reviewer</b></td></tr>
+  </table></div>
+
+  <h2>Donner du contexte au bot</h2>
+  <div class="card twrap"><table>
+    <tr><th>Je veux…</th><th>Faire</th></tr>
+    <tr><td class="wrap-first">Qu'il connaisse nos conventions</td><td><code>[context]</code><br><code>read = ["AGENTS.md", "docs/"]</code><br>Lues dans le dépôt à chaque review, jamais recopiées.</td></tr>
+    <tr><td class="wrap-first">Éviter d'injecter un fichier de 30 Ko</td><td>Déclarer le <b>dossier</b> plutôt que le fichier : seul l'inventaire est injecté, l'agent ouvre à la demande.</td></tr>
+    <tr><td class="wrap-first">Savoir si un chemin déclaré n'existe plus</td><td>Rien à faire — un chemin introuvable sort en <code>WARNING</code>.</td></tr>
+    <tr><td class="wrap-first">Qu'il lise le ticket Jira</td><td><code>JIRA_BASE_URL</code>, <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code><br>Absents : le reviewer <code>us</code> est skippé.</td></tr>
+    <tr><td class="wrap-first">Changer le ton des remarques</td><td><code>common/style.md</code> — langue, longueur, ce qu'on ne signale jamais.</td></tr>
+  </table></div>
+
+  <h2>Installer et déployer</h2>
+  <div class="card twrap"><table>
+    <tr><th>Je veux…</th><th>Faire</th></tr>
+    <tr><td class="wrap-first">Essayer sans rien configurer</td><td><code>reviewme review --repo O/R --pr N --dry-run</code></td></tr>
+    <tr><td class="wrap-first">Une config qui vit avec le code</td><td><code>REVIEWME_CONFIG_HOME=$CLONE/.reviewme</code></td></tr>
+    <tr><td class="wrap-first">Une config partagée entre dépôts</td><td>Un dépôt d'instance, plusieurs dossiers sous <code>projects/</code></td></tr>
+    <tr><td class="wrap-first">Un seul clone en CI</td><td><code>git submodule add &lt;moteur&gt; .core</code> dans l'instance</td></tr>
+    <tr><td class="wrap-first">Figer la version du moteur</td><td>Cloner un tag, pas la branche par défaut</td></tr>
+    <tr><td class="wrap-first">Passer par notre passerelle LLM</td><td><code>ANTHROPIC_BASE_URL</code> + <code>ANTHROPIC_AUTH_TOKEN</code><br>Rien à coder. Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code>.</td></tr>
+    <tr><td class="wrap-first">Que le bot commente sous sa propre identité</td><td><code>GITHUB_APP_ID</code> + <code>GITHUB_APP_PRIVATE_KEY_PATH</code></td></tr>
+  </table></div>
+
+  <div class="tipbox"><span class="chip c-ok">Le pourquoi</span> Ces réglages sont expliqués dans <a href="#reviewers">Reviewers</a> et <a href="#projets">Projets &amp; instances</a>. Cette page ne donne que le geste.</div>
 </section>
 
 <section class="page" id="demarrer">

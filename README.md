@@ -140,6 +140,24 @@ dépôt. Un **fichier** voit son contenu injecté, un **dossier** son inventaire
 introuvable déclenche un WARNING — un chemin mort se voit au lieu de priver silencieusement
 le reviewer de ses règles.
 
+## Recettes
+
+| Je veux… | Faire |
+|---|---|
+| Lancer un reviewer seulement si certains fichiers changent | `[when] paths = ["**/*.strings"]` |
+| Le désactiver sans supprimer son dossier | `enabled = false` |
+| Voir ce qui serait posté, sans rien poster | `--dry-run` |
+| Moins de commentaires | `MAX_COMMENTS_PER_PR=5` |
+| Moins de remarques incertaines | `CONFIDENCE_THRESHOLD=90` |
+| Un modèle moins cher pour un reviewer | `model = "…"` dans son `reviewer.toml` |
+| Ne pas payer un LLM pour un fait vérifiable | `precheck = "precheck.py"` |
+| Qu'il connaisse nos conventions | `[context] read = ["AGENTS.md", "docs/"]` |
+| Qu'il lise le ticket | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` |
+| Passer par une passerelle LLM | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` |
+| Un seul clone en CI | `git submodule add <moteur> .core` |
+
+Liste complète : [`docs/reviewme.html`](docs/reviewme.html) § Recettes.
+
 ## Comment ça tourne
 
 ```
