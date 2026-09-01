@@ -38,6 +38,10 @@ Les deux sont reliés par `REVIEWME_CONFIG_HOME` — un simple chemin, donc troi
 | Dans le dépôt reviewé | `.reviewme/` à sa racine | un seul repo ; la config évolue dans la même PR que le code |
 | Aucune config | — | démarrer, tester la chaîne |
 
+Une instance porte **un ou plusieurs projets** : `projects/api/`, `projects/webapp/`,
+`projects/mobile/`… `PROJECT` désigne lequel utiliser. Passer d'un dépôt unique à un
+monorepo, c'est ajouter un dossier — rien à migrer.
+
 Config dans le dépôt reviewé : `REVIEWME_CONFIG_HOME=$CLONE/.reviewme`. Rien à créer ni à
 cloner en plus — mais protéger `.reviewme/` par `CODEOWNERS`, sinon une PR peut adoucir sa
 propre review. Une organisation a son instance, avec ses
