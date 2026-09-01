@@ -489,13 +489,17 @@ cd config && ./reviewme review --pr "$PR_NUMBER"</code></pre>
   <div class="ess"><span class="chip c-info">L'essentiel</span> Le moteur renvoie des findings JSON ; ReviewMe <b>valide chaque ligne contre le diff</b> (sinon 422), <b>déduplique par un fingerprint stable</b>, poste en <b>un seul write</b>, et <b>répond dans les threads</b> quand une ligne a bougé.</p>
 
   <h2>1 · Findings structurés</h2>
-  <p>Le moteur (<code>claude -p</code>, avec la persona du reviewer) répond par un JSON : <code>summary</code> + liste de <code>findings</code> <code>{path, line, severity, message, snippet, confidence}</code>. Si le JSON est invalide, ReviewMe <b>retombe sur un commentaire global</b> plutôt que de crasher : la review est livrée, en moins bien, jamais perdue.</p>
+  <p><code>claude -p</code>, avec la persona du reviewer, répond par un JSON : <code>summary</code> + <code>findings {path, line, severity, message, snippet, confidence}</code>.</p>
+  <p>JSON invalide ? Repli en commentaire global plutôt qu'un crash. La review est livrée, en moins bien, jamais perdue.</p>
 
   <h2>2 · Validation anti-422</h2>
-  <p>GitHub valide une review de façon <b>atomique</b> : un seul commentaire sur une ligne hors-diff rejette TOUTE la review. <code>diff_utils</code> parse les patches (<code>GET /pulls/{n}/files</code>) et calcule les lignes réellement commentables. Les findings hors-diff sont <b>basculés dans le summary</b>, jamais postés en inline.</p>
+  <p>GitHub valide une review de façon <b>atomique</b> : un seul commentaire hors-diff rejette TOUTE la review.</p>
+  <p><code>diff_utils</code> parse les patches et calcule les lignes commentables. Les findings hors-diff basculent dans le summary.</p>
 
   <h2>3 · Fingerprint &amp; déduplication</h2>
-  <p>Chaque commentaire porte un marqueur invisible <code>&lt;!-- reviewme:REVIEWER:HASH --&gt;</code> où <code>HASH = sha1(path + contenu réel de la ligne)</code> — <b>indépendant du numéro de ligne</b> et du texte narré par le LLM, donc stable entre deux runs. On reconnaît nos commentaires par ce <b>marqueur</b>, jamais par l'auteur (sinon on toucherait les threads humains).</p>
+  <p>Chaque commentaire porte un marqueur invisible : <code>&lt;!-- reviewme:REVIEWER:HASH --&gt;</code>, avec <code>HASH = sha1(path + contenu de la ligne)</code>.</p>
+  <p><b>Indépendant du numéro de ligne</b> et du texte narré par le LLM, donc stable entre deux runs.</p>
+  <p>On reconnaît nos commentaires par ce marqueur, jamais par l'auteur — sinon on toucherait les threads humains.</p>
 
   <p>La clé de déduplication est le <b>couple</b> <code>(reviewer, hash)</code>. C'est ce qui permet à deux reviewers de commenter la même ligne sans que l'un fasse disparaître l'autre.</p>
 
