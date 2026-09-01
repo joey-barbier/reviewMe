@@ -103,7 +103,8 @@ td.wrap-first:first-child { white-space: normal; }
   <a href="#overview" class="on">Vue d'ensemble</a>
   <a href="#demarrer">Démarrer</a>
   <div class="grp">Comprendre</div>
-  <a href="#reviewers">Reviewers &amp; projets</a>
+  <a href="#reviewers">Reviewers</a>
+  <a href="#projets">Projets &amp; instances</a>
   <a href="#interne">Sous le capot</a>
   <div class="grp">Exploiter</div>
   <a href="#deployer">Déployer</a>
@@ -217,12 +218,13 @@ ANTHROPIC_API_KEY=sk-ant-... GITHUB_TOKEN=github_pat_... \
 
 <section class="page" id="reviewers">
   <span class="eyebrow">Comprendre</span>
-  <h1>Reviewers &amp; projets</h1>
-  <p class="tl">Plusieurs relecteurs spécialisés, activés projet par projet.</p>
-  <div class="ess"><span class="chip c-info">L'essentiel</span> Un <b>projet</b> = un dossier par repo, qui porte ses reviewers <b>complets</b> (persona incluse) et ses consignes communes. Chaque reviewer a son objectif, ses entrées et son format de sortie. Le projet <b>active</b> ceux qu'il veut ; le diff <b>déclenche</b> ceux qui le concernent.</p>
+  <h1>Reviewers</h1>
+  <p class="tl">Plusieurs relecteurs spécialisés sur une même PR.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Chaque reviewer a ses entrées et son format de sortie. Ils tournent en parallèle ; l'écriture GitHub reste unique.</div>
 
-  <h2>Pourquoi plusieurs reviewers</h2>
-  <p>Pas pour alléger un prompt trop gros : parce que les <b>entrées</b> et les <b>sorties</b> diffèrent. « AC3 non couvert » n'a aucune ligne de diff à pointer — c'est une absence, pas une erreur située. Un finding technique, si. Les deux ne peuvent pas partager un format de sortie.</p>
+<h2>Pourquoi plusieurs reviewers</h2>
+  <p>Pas pour alléger un prompt : parce que les <b>entrées</b> et les <b>sorties</b> diffèrent.</p>
+  <p>« AC3 non couvert » n'a aucune ligne à pointer — c'est une absence, pas une erreur située. Un finding technique, si. Deux formats de sortie, donc deux reviewers.</p>
 
   <div class="card twrap"><table>
     <tr><th>Reviewer</th><th>Objectif</th><th>Entrées</th><th>Sortie</th><th>Déclenchement</th></tr>
@@ -232,25 +234,7 @@ ANTHROPIC_API_KEY=sk-ant-... GITHUB_TOKEN=github_pat_... \
   </table></div>
   <p>Ce sont des <b>objectifs types</b> livrés dans <code>config/templates/</code>, pas des prompts partagés : chaque projet part du squelette puis écrit sa propre persona.</p>
 
-  <h2>Le modèle : le projet est l'unité</h2>
-  <pre><code>config/
-  output-contract.md          ← CORE : interface du parseur, aucun projet ne la redéfinit
-  projects/
-    ah-ios/
-      common/*.md             langue, ton, format — PAS les conventions de code
-      reviewers/              ← LA source de vérité : un dossier = un reviewer
-        tech/{reviewer.toml, system.md}
-        us/{reviewer.toml, system.md}
-        i18n/{reviewer.toml, system.md, precheck.py}
-    bff-api/
-      common/*.md
-      reviewers/{tech, us}/   ← une API n'a rien à traduire</code></pre>
-  <p>La présence du dossier suffit à activer le reviewer : il n'y a aucune liste à tenir à jour ailleurs. Pour en mettre un en sommeil sans supprimer son dossier : <code>enabled = false</code> dans son <code>reviewer.toml</code>.</p>
-  <p>Pas d'héritage entre projets : deux teams sur deux produits écrivent des personas réellement différentes, même pour un objectif identique. La duplication est le <b>prix assumé de leur indépendance</b> — bornée (une persona ≈ 45 lignes) et amorcée par <code>reviewme init-project</code>.</p>
-
-  <div class="tipbox"><span class="chip c-ok">Effet de bord utile</span> Tout le contenu propre à un projet (personas métier, consignes internes) vit dans <b>un seul dossier</b> — un seul chemin à exclure d'un dépôt public.</div>
-
-  <h2>Deux niveaux de sélection</h2>
+<h2>Deux niveaux de sélection</h2>
   <div class="flow">
     <div class="st g">1 · Activation<br><small>le projet choisit ses reviewers</small></div>
     <div class="ar">→</div>
@@ -258,27 +242,18 @@ ANTHROPIC_API_KEY=sk-ant-... GITHUB_TOKEN=github_pat_... \
     <div class="ar">→</div>
     <div class="st t">3 · Exécution<br><small>en parallèle, écriture unique</small></div>
   </div>
-  <p>Le niveau 2 n'est pas un confort. Sans lui, <b>chaque PR paie tous les reviewers activés</b> : à ~0,65-0,91 $ par reviewer, quatre reviewers systématiques coûtent ~3 $ la PR. <code>i18n</code> ne se déclenche que si le diff touche un fichier de localisation ; <code>us</code> que si une clé de ticket est détectée.</p>
+  <p>Le niveau 2 n'est pas un confort : sans lui, <b>chaque PR paie tous les reviewers activés</b>. Quatre reviewers systématiques ≈ 3 $ la PR.</p>
+  <p><code>i18n</code> ne part que si le diff touche une locale. <code>us</code>, que si une clé de ticket est détectée.</p>
 
-  <h2>Écriture unique et plafond</h2>
-  <p>Les reviewers s'exécutent <b>en parallèle</b> (chacun est un <code>claude -p</code> indépendant), mais l'écriture GitHub passe par <b>un seul point</b> : dédup partagée, limite de 80 créations/minute respectée, et surtout plafond de commentaires calculable — impossible à faire reviewer par reviewer.</p>
+<h2>Écriture unique et plafond</h2>
+  <p>Les reviewers tournent <b>en parallèle</b> — un <code>claude -p</code> chacun. L'écriture GitHub passe par <b>un seul point</b>.</p>
+  <p>Trois raisons : dédup partagée, limite de 80 créations/minute, et plafond de commentaires — incalculable reviewer par reviewer.</p>
 
   <div class="warnbox"><span class="chip c-ko">Le vrai risque</span> Quatre reviewers zélés = 15 commentaires = le développeur décroche et désactive le bot. <code>MAX_COMMENTS_PER_PR</code> (défaut 10) coupe <b>par PR, tous reviewers confondus</b>, en gardant les plus graves puis les plus sûrs. Le reste est journalisé, pas posté.</div>
 
-  <h2>Plugins</h2>
-  <p>Un reviewer peut avoir besoin de <b>skills ou d'agents</b> qui ne vivent pas dans ReviewMe — outillage maison, analyse spécialisée. Il les déclare, le moteur les installe avant la review :</p>
-  <pre><code># reviewer.toml
-[plugins]
-marketplaces = ["owner/marketplace-repo"]   # ajoutés d'abord
-install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code></pre>
-  <p>L'opération est <b>idempotente</b> : ce qui est déjà installé n'est pas réinstallé, une review ne paie pas une résolution réseau à chaque PR. Un échec n'affecte que le reviewer concerné — les autres continuent.</p>
-  <div class="warnbox"><span class="chip c-ko">Code tiers</span> Installer un plugin fait tourner du <b>code que vous n'avez pas écrit</b> dans l'environnement de review, aux côtés des secrets du job. Un plugin se relit comme du code. Le moteur garde son allowlist d'outils : un skill de plugin n'obtient <b>pas plus de droits</b> que le reviewer qui l'invoque — ce qui limite aussi ce qu'un plugin très outillé peut faire ici.</div>
-
-  <h2>Le déterministe avant le LLM</h2>
-  <p>Un reviewer peut déclarer un <code>precheck</code> : un script dont la sortie est injectée comme <b>faits établis</b>. « La clé <code>checkout.title</code> existe en <code>fr</code> et manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde ce qui demande du jugement : variables non substituées, pluriels, longueur, ton. Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
-
-  <h2>Les conventions ne se recopient pas</h2>
-  <p>Un projet documente déjà ses règles (<code>AGENTS.md</code>, <code>CONTRIBUTING.md</code>, <code>docs/</code>). En copier le contenu dans la config d'un reviewer crée une copie qui <b>diverge en silence</b> dès la première évolution du repo — et personne ne le voit, puisque le reviewer continue de citer d'anciennes règles avec assurance.</p>
+<h2>Les conventions ne se recopient pas</h2>
+  <p>Un projet documente déjà ses règles. Les copier dans la config crée une copie qui <b>diverge en silence</b>.</p>
+  <p>Personne ne le voit : le reviewer continue de citer d'anciennes règles avec assurance.</p>
   <p>Un reviewer déclare donc <b>ce qu'il faut lire</b>, et le moteur le résout à chaque review :</p>
   <pre><code># reviewer.toml
 [context]
@@ -293,17 +268,45 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
   <div class="tipbox"><span class="chip c-ok">Le gain</span> Quand un fichier de conventions est renommé ou supprimé, le WARNING le signale au run suivant. Sans déclaration, le reviewer perdrait ses règles sans que personne ne s'en aperçoive — il continuerait de commenter, simplement moins bien.</div>
   <p>Il reste donc dans <code>common/</code> uniquement ce qui <b>n'existe nulle part dans le repo</b> : langue, ton, longueur des remarques, faux positifs à ne jamais produire — commun à tous les reviewers du projet.</p>
 
-  <h2>Un noyau, autant de projets qu'il faut</h2>
-  <p>Le moteur est identique partout et ne connaît aucun projet. Tout ce qui le spécialise passe par deux variables — d'où deux formes d'usage, sans rien changer au code.</p>
-  <svg viewBox="0 0 960 450" width="100%" role="img" aria-label="Un noyau, deux formes de configuration" style="max-width:960px;font-family:-apple-system,BlinkMacSystemFont,sans-serif"><rect x="334" y="4" width="300" height="76" rx="3" fill="#111"/><rect x="330" y="0" width="300" height="76" rx="3" fill="#FFFFFF" stroke="#111" stroke-width="2"/><text x="480.0" y="43.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="480" y="28" text-anchor="middle" font-size="12" font-weight="800" fill="#111">LE NOYAU</text><text x="480" y="46" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">le moteur — identique partout,</text><text x="480" y="61" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">il ne connaît aucun projet</text><line x1="480" y1="80" x2="480" y2="104" stroke="#111" stroke-width="2"/><rect x="364" y="108" width="240" height="44" rx="3" fill="#111"/><rect x="360" y="104" width="240" height="44" rx="3" fill="#87CEEB" stroke="#111" stroke-width="2"/><text x="480.0" y="131.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="480" y="124" text-anchor="middle" font-size="11.5" font-weight="700" fill="#111">REVIEWME_CONFIG_HOME</text><text x="480" y="140" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">+ PROJECT</text><line x1="480" y1="152" x2="480" y2="176" stroke="#111" stroke-width="2"/><line x1="200" y1="176" x2="760" y2="176" stroke="#111" stroke-width="2"/><line x1="200" y1="176" x2="200" y2="192" stroke="#111" stroke-width="2"/><polygon points="200,200 195.5,192 204.5,192" fill="#111"/><line x1="760" y1="176" x2="760" y2="192" stroke="#111" stroke-width="2"/><polygon points="760,200 755.5,192 764.5,192" fill="#111"/><rect x="34" y="212" width="340" height="156" rx="3" fill="#111"/><rect x="30" y="208" width="340" height="156" rx="3" fill="#FAF4F0" stroke="#111" stroke-width="2"/><text x="200.0" y="291.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="200" y="234" text-anchor="middle" font-size="13" font-weight="800" fill="#111">MONOREPO</text><text x="200" y="252" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">une instance, plusieurs projets</text><text x="54" y="280" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/api/</text><text x="54" y="302" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/webapp/</text><text x="54" y="324" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/mobile/</text><text x="200" y="348" text-anchor="middle" font-size="10.5" font-weight="600" fill="#55504C">PROJECT désigne lequel utiliser</text><rect x="594" y="212" width="340" height="156" rx="3" fill="#111"/><rect x="590" y="208" width="340" height="156" rx="3" fill="#FAF4F0" stroke="#111" stroke-width="2"/><text x="760.0" y="291.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="760" y="234" text-anchor="middle" font-size="13" font-weight="800" fill="#111">DÉPÔT UNIQUE</text><text x="760" y="252" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">une instance, un projet</text><text x="614" y="280" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/mon-repo/</text><text x="614" y="302" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111"></text><text x="614" y="324" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111"></text><text x="760" y="348" text-anchor="middle" font-size="10.5" font-weight="600" fill="#55504C">PROJECT=mon-repo, et c'est tout</text></svg>
-  <div class="card twrap"><table>
-    <tr><th>Forme</th><th>Ce que ça donne</th><th>Quand</th></tr>
-    <tr><td class="wrap-first"><b>Monorepo</b></td><td>Une instance, plusieurs dossiers sous <code>projects/</code>. <code>PROJECT</code> désigne lequel utiliser au lancement — chacun a ses reviewers, ses personas et ses conventions.</td><td>Plusieurs dépôts ou plusieurs briques d'un même produit (API, web, mobile) partagent une instance.</td></tr>
-    <tr><td class="wrap-first"><b>Dépôt unique</b></td><td>Une instance, un seul projet. <code>PROJECT=mon-repo</code> et rien d'autre à décider.</td><td>Un seul dépôt à reviewer — typiquement une config posée dans le dépôt lui-même.</td></tr>
-  </table></div>
-  <p>Passer de l'un à l'autre, c'est ajouter un dossier : la première forme n'est que la seconde répétée. Rien à migrer.</p>
+<h2>Le déterministe avant le LLM</h2>
+  <p>Un reviewer peut déclarer un <code>precheck</code> : un script dont la sortie est injectée comme <b>faits établis</b>.</p>
+  <p>« La clé <code>checkout.title</code> manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde le jugement : variables non substituées, pluriels, longueur, ton.</p>
+  <p>Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
 
-  <h2>Où placer votre configuration</h2>
+<h2>Plugins</h2>
+  <p>Un reviewer peut avoir besoin de <b>skills ou d'agents</b> qui ne vivent pas dans ReviewMe — outillage maison, analyse spécialisée. Il les déclare, le moteur les installe avant la review :</p>
+  <pre><code># reviewer.toml
+[plugins]
+marketplaces = ["owner/marketplace-repo"]   # ajoutés d'abord
+install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code></pre>
+  <p><b>Idempotent</b> : ce qui est installé ne l'est pas deux fois. Un échec n'affecte que le reviewer concerné.</p>
+  <div class="warnbox"><span class="chip c-ko">Code tiers</span> Installer un plugin fait tourner du <b>code que vous n'avez pas écrit</b> dans l'environnement de review, aux côtés des secrets du job. Un plugin se relit comme du code. Le moteur garde son allowlist d'outils : un skill de plugin n'obtient <b>pas plus de droits</b> que le reviewer qui l'invoque — ce qui limite aussi ce qu'un plugin très outillé peut faire ici.</div>
+</section>
+
+<section class="page" id="projets">
+  <span class="eyebrow">Comprendre</span>
+  <h1>Projets &amp; instances</h1>
+  <p class="tl">Où vit la configuration, et comment le moteur la trouve.</p>
+  <div class="ess"><span class="chip c-info">L'essentiel</span> Le moteur ne connaît aucun projet. Deux variables le spécialisent : <code>REVIEWME_CONFIG_HOME</code> (où chercher) et <code>PROJECT</code> (lequel utiliser).</div>
+
+  <svg viewBox="0 0 960 450" width="100%" role="img" aria-label="Un noyau, deux formes de configuration" style="max-width:960px;font-family:-apple-system,BlinkMacSystemFont,sans-serif"><rect x="334" y="4" width="300" height="76" rx="3" fill="#111"/><rect x="330" y="0" width="300" height="76" rx="3" fill="#FFFFFF" stroke="#111" stroke-width="2"/><text x="480.0" y="43.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="480" y="28" text-anchor="middle" font-size="12" font-weight="800" fill="#111">LE NOYAU</text><text x="480" y="46" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">le moteur — identique partout,</text><text x="480" y="61" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">il ne connaît aucun projet</text><line x1="480" y1="80" x2="480" y2="104" stroke="#111" stroke-width="2"/><rect x="364" y="108" width="240" height="44" rx="3" fill="#111"/><rect x="360" y="104" width="240" height="44" rx="3" fill="#87CEEB" stroke="#111" stroke-width="2"/><text x="480.0" y="131.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="480" y="124" text-anchor="middle" font-size="11.5" font-weight="700" fill="#111">REVIEWME_CONFIG_HOME</text><text x="480" y="140" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">+ PROJECT</text><line x1="480" y1="152" x2="480" y2="176" stroke="#111" stroke-width="2"/><line x1="200" y1="176" x2="760" y2="176" stroke="#111" stroke-width="2"/><line x1="200" y1="176" x2="200" y2="192" stroke="#111" stroke-width="2"/><polygon points="200,200 195.5,192 204.5,192" fill="#111"/><line x1="760" y1="176" x2="760" y2="192" stroke="#111" stroke-width="2"/><polygon points="760,200 755.5,192 764.5,192" fill="#111"/><rect x="34" y="212" width="340" height="156" rx="3" fill="#111"/><rect x="30" y="208" width="340" height="156" rx="3" fill="#FAF4F0" stroke="#111" stroke-width="2"/><text x="200.0" y="291.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="200" y="234" text-anchor="middle" font-size="13" font-weight="800" fill="#111">MONOREPO</text><text x="200" y="252" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">une instance, plusieurs projets</text><text x="54" y="280" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/api/</text><text x="54" y="302" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/webapp/</text><text x="54" y="324" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/mobile/</text><text x="200" y="348" text-anchor="middle" font-size="10.5" font-weight="600" fill="#55504C">PROJECT désigne lequel utiliser</text><rect x="594" y="212" width="340" height="156" rx="3" fill="#111"/><rect x="590" y="208" width="340" height="156" rx="3" fill="#FAF4F0" stroke="#111" stroke-width="2"/><text x="760.0" y="291.0" text-anchor="middle" font-size="13" font-weight="700" fill="#111"></text><text x="760" y="234" text-anchor="middle" font-size="13" font-weight="800" fill="#111">DÉPÔT UNIQUE</text><text x="760" y="252" text-anchor="middle" font-size="10.5" font-weight="400" fill="#55504C">une instance, un projet</text><text x="614" y="280" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111">projects/mon-repo/</text><text x="614" y="302" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111"></text><text x="614" y="324" font-size="11.5" font-family="ui-monospace,Menlo,monospace" fill="#111"></text><text x="760" y="348" text-anchor="middle" font-size="10.5" font-weight="600" fill="#55504C">PROJECT=mon-repo, et c'est tout</text></svg>
+
+  <div class="card twrap"><table>
+    <tr><th>Forme</th><th>Structure</th><th>Quand</th></tr>
+    <tr><td class="wrap-first"><b>Monorepo</b></td><td>Plusieurs dossiers sous <code>projects/</code>. <code>PROJECT</code> désigne lequel.</td><td>Plusieurs dépôts, ou plusieurs briques d'un produit (API, web, mobile).</td></tr>
+    <tr><td class="wrap-first"><b>Dépôt unique</b></td><td>Un seul projet. <code>PROJECT=mon-repo</code>.</td><td>Un seul dépôt à reviewer.</td></tr>
+  </table></div>
+  <p>Passer de l'un à l'autre = ajouter un dossier. Rien à migrer.</p>
+
+  <h2>Anatomie d'un projet</h2>
+  <pre><code>projects/mon-repo/
+  common/style.md                    langue, ton, format — commun aux reviewers
+  reviewers/tech/reviewer.toml       sortie, déclencheur, docs à lire
+  reviewers/tech/system.md           la persona</code></pre>
+  <p>Les reviewers sont les <b>sous-dossiers de <code>reviewers/</code></b>. Rien à déclarer ailleurs : ajouter un reviewer = créer son dossier. Le mettre en sommeil = <code>enabled = false</code> dans son <code>reviewer.toml</code>.</p>
+  <div class="warnbox"><span class="chip c-ko">Piège</span> L'<code>id</code> d'un reviewer entre dans le marqueur de dédup. Le renommer sur un dépôt déjà commenté fait <b>reposter tous ses commentaires en double</b>.</div>
+
+<h2>Où placer votre configuration</h2>
   <p>La config de projets vit là où <code>REVIEWME_CONFIG_HOME</code> pointe — c'est un simple chemin, donc trois stratégies sont possibles. Elles ne s'excluent pas : on démarre souvent par la dernière et on remonte.</p>
   <div class="card twrap"><table>
     <tr><th>Stratégie</th><th>Où vit la config</th><th>Quand la choisir</th></tr>
@@ -312,7 +315,7 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
     <tr><td class="wrap-first"><b>Aucune config</b><br>mode simple</td><td>Rien — les prompts du moteur</td><td>Démarrer, tester la chaîne. Aucune connaissance des conventions du projet.</td></tr>
   </table></div>
 
-  <h3>Exemple complet : la config dans le dépôt reviewé</h3>
+<h3>Exemple complet : la config dans le dépôt reviewé</h3>
   <p>Quatre étapes, une seule fois. C'est la forme la plus simple pour démarrer sur un projet.</p>
 
   <p><b>1 · Créer le squelette</b> — <code>init-project</code> écrit directement au bon endroit :</p>
@@ -353,69 +356,26 @@ git archive FETCH_HEAD .reviewme | tar -x -C "$CFG" --strip-components=1
 export REVIEWME_CONFIG_HOME="$CFG"</code></pre>
   La PR ne peut alors plus influencer sa propre review, même avant merge.</div>
 
-  <h3>Les deux autres, en une commande</h3>
+<h3>Les deux autres, en une commande</h3>
   <div class="card twrap"><table>
     <tr><th>Stratégie</th><th>Mise en place</th></tr>
     <tr><td class="wrap-first"><b>Dépôt d'instance dédié</b></td><td><code>mkdir ~/dev/reviewme-monprojet &amp;&amp; cd $_ &amp;&amp; git init</code><br><code>export REVIEWME_CONFIG_HOME=$PWD</code><br><code>reviewme init-project mon-repo --reviewers tech,i18n</code><br>Puis <code>PROJECT=mon-repo</code> au lancement.</td></tr>
     <tr><td class="wrap-first"><b>Aucune config</b></td><td><code>reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code><br>Ni <code>PROJECT</code> ni <code>REVIEWME_CONFIG_HOME</code> : persona générique du moteur.</td></tr>
   </table></div>
 
-  <h2>Une instance = un dépôt de config</h2>
-  <p>Une organisation ne veut ni <b>forker le moteur</b> (il faudrait rebaser à chaque évolution), ni committer ses personas et consignes internes dans le dépôt du moteur. La config de projets vit donc dans <b>son propre dépôt</b>, relié par une seule variable :</p>
-  <pre><code>export REVIEWME_CONFIG_HOME=~/dev/mon-instance
-
-mon-instance/            ← dépôt privé, versionné à part, aucun code moteur
-  projects/
-    api/                   reviewers/tech/
-    webapp/                reviewers/{tech, i18n}/</code></pre>
-  <p>Le moteur n'étant pas dans ce dépôt, l'instance porte un lanceur <code>./reviewme</code> qui le localise et lui passe la main — plus son propre <code>.env</code>, qui <b>prime sur celui du moteur</b> (repo cible, token, seuils propres à l'instance) :</p>
-  <pre><code>./reviewme projects
-./reviewme review --pr 147 --dry-run
-
-# équivalent manuel, sans le lanceur :
-REVIEWME_CONFIG_HOME=~/dev/mon-instance \
-  ~/dev/reviewMe/.venv/bin/python -m reviewme.cli projects</code></pre>
-
-  <p>C'est délibérément <b>un chemin, pas un submodule git</b> : un submodule ramène exactement les frictions d'un fork (init, update, HEAD détachée, commit de pointeur à chaque changement) que ce découpage cherche à éviter. Deux dépôts indépendants ; le moteur reste <code>git pull</code>-able sans conflit.</p>
-  <div class="card twrap"><table>
-    <tr><th>Où</th><th>Quoi</th><th>Pourquoi</th></tr>
-    <tr><td>Moteur</td><td><code>config/output-contract.md</code></td><td>Interface du parseur — la redéfinir casse le parsing en silence</td></tr>
-    <tr><td>Moteur</td><td><code>config/templates/</code></td><td>Squelette copié par <code>init-project</code></td></tr>
-    <tr><td><b>Dépôt de config</b></td><td><code>projects/&lt;repo&gt;/reviewers/</code></td><td>Personas et consignes communes : propre à l'organisation</td></tr>
-    <tr><td><b>Dépôt reviewé</b></td><td><code>AGENTS.md</code>, <code>docs/</code>…</td><td>Les conventions de code — lues à la source, jamais recopiées</td></tr>
-  </table></div>
-
-  <h3>En CI : l'instance épingle le moteur</h3>
-  <p>En CI, on ne veut ni deux clones à synchroniser, ni un moteur qui change de version sous les pieds entre deux builds. L'instance monte alors le moteur en submodule <code>.core</code> : elle <b>épingle la version</b> qu'elle utilise, et un seul clone ramène tout.</p>
+<h3>En CI : l'instance épingle le moteur</h3>
+  <p>En CI, pas de moteur qui change de version entre deux builds. L'instance le monte en submodule <code>.core</code> et <b>épingle sa version</b> : un seul clone ramène tout.</p>
   <pre><code># dans le dépôt d'instance, une fois
 git submodule add &lt;url-du-moteur&gt; .core
 
 # en CI
 git clone --recurse-submodules &lt;url-de-l-instance&gt; config
 cd config && ./reviewme review --pr "$PR_NUMBER"</code></pre>
-  <p>Le lanceur détecte <code>.core</code> seul — aucune variable à poser. Sans <code>.venv</code> pré-construit il passe par <code>uv run</code> : rien à installer d'autre que <code>uv</code>. Mettre à jour le moteur devient un geste explicite et daté : <code>git -C .core pull</code> puis commit du pointeur.</p>
+  <p>Le lanceur détecte <code>.core</code> seul, aucune variable à poser. Sans <code>.venv</code>, il passe par <code>uv run</code>.</p>
+  <p>Mettre à jour le moteur devient un geste daté : <code>git -C .core pull</code> puis commit du pointeur.</p>
   <div class="tipbox"><span class="chip c-ok">Le sens du montage</span> C'est <b>l'instance qui épingle le moteur</b>, jamais l'inverse. Le moteur ne référence aucune instance, reste neutre, et peut être partagé ou publié — alors qu'un moteur qui monterait ses instances en submodules se salirait d'un commit de pointeur à chaque changement de persona.</div>
-
-  <h3>Agréger plusieurs dépôts de config</h3>
-  <p>Quand plusieurs équipes maintiennent chacune leur config, un dépôt <b>chapeau</b> peut les monter en submodules. Deux conditions :</p>
-  <div class="card twrap"><table>
-    <tr><th>Condition</th><th>Détail</th></tr>
-    <tr><td class="wrap-first">Un submodule = <b>un projet</b></td><td>Monté en <code>projects/&lt;repo&gt;</code>, avec <code>reviewers/</code> et <code>common/</code> à sa racine. Monter un dépôt qui contient lui-même un <code>projects/</code> ajoute un niveau : le moteur ne le trouve pas.</td></tr>
-    <tr><td class="wrap-first">Le chapeau n'est <b>jamais le moteur</b></td><td>Sinon le dépôt du moteur référence des dépôts privés et se salit d'un commit de pointeur à chaque changement de config — précisément ce que la séparation évite.</td></tr>
-  </table></div>
-  <p>Git refuse deux submodules au même chemin (<code>already exists in the index</code>), donc un doublon de projet est impossible par construction.</p>
-  <div class="warnbox"><span class="chip c-ko">Le coût réel</span> Un <code>git clone</code> sans <code>--recurse-submodules</code> donne des dossiers de projets <b>vides</b>, et un <code>git pull</code> ne les met pas à jour sans <code>git submodule update</code>. Le moteur détecte ce cas et le dit explicitement, mais c'est une friction permanente : ne prendre les submodules que si l'agrégation est un vrai besoin. Pour une seule instance, <code>REVIEWME_CONFIG_HOME</code> suffit.</div>
-
-  <h2>Créer un projet</h2>
-  <pre><code>reviewme init-project ah-ios --reviewers tech,us,i18n
-reviewme projects          # liste les projets et leurs reviewers
-
-# puis, dans .env :
-PROJECT=ah-ios</code></pre>
-  <p>Le dossier porte le nom du <b>repo</b>, jamais celui de l'équipe : une team renommée ou une app qui change de main ne doit rien casser.</p>
-
-  <div class="warnbox"><span class="chip c-ko">Piège</span> L'<code>id</code> d'un reviewer entre dans le marqueur de dédup. Le renommer sur un projet en cours rend orphelins tous ses commentaires déjà postés, qui seront <b>reposés en double</b>.</div>
 </section>
+
 
 <section class="page" id="interne">
   <span class="eyebrow">Comprendre</span>
@@ -449,16 +409,7 @@ PROJECT=ah-ios</code></pre>
   </table></div>
   <p class="legend"><span>Le batch inline = <b>un seul</b> <code>POST /pulls/{n}/reviews</code> (respecte la limite de 80 créations/min).</span></p>
 
-  <h2>Changer de moteur LLM</h2>
-  <p>La review est produite par la CLI <code>claude</code>, lancée en sous-processus. Trois niveaux de personnalisation, du plus simple au plus lourd :</p>
-  <div class="card twrap"><table>
-    <tr><th>Besoin</th><th>Comment</th></tr>
-    <tr><td class="wrap-first"><b>Passerelle d'entreprise</b><br>(proxy compatible Anthropic)</td><td>Rien à coder : <code>ANTHROPIC_BASE_URL</code> et <code>ANTHROPIC_AUTH_TOKEN</code> dans le <code>.env</code> sont hérités par le sous-processus. Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code> si le proxy rejette les en-têtes de prompt caching.</td></tr>
-    <tr><td class="wrap-first"><b>Wrapper maison</b><br>(quotas, journalisation, auth)</td><td><code>CLAUDE_BIN=/chemin/wrapper</code>. Le wrapper doit accepter les mêmes arguments et produire la même enveloppe <code>--output-format json</code>.</td></tr>
-    <tr><td class="wrap-first"><b>Un autre modèle</b><br>via une API de complétion</td><td>Pas une question de configuration — voir l'avertissement ci-dessous.</td></tr>
-  </table></div>
-  <div class="warnbox"><span class="chip c-ko">Ce n'est pas qu'un endpoint</span> <code>claude -p</code> est un <b>agent</b> : il ouvre les fichiers du dépôt, cherche dedans, lit l'historique git pour contextualiser un finding. Une API de complétion classique ne fait rien de tout ça — tout devrait tenir dans un seul prompt. Basculer sur ce type de moteur, c'est un <b>backend à écrire</b> (assemblage du contexte, parsing, comptabilité du coût), pas une variable à poser.</div>
-
+  
   <h2>Modules</h2>
   <div class="card twrap"><table>
     <tr><th>Module</th><th>Rôle</th></tr>
@@ -536,14 +487,17 @@ data/      state.json  reviews/  reviews.log   (gitignoré — hors OSS)</code><
     <tr><td class="wrap-first">VPS (poll/cron)</td><td>—</td><td>Cron/timer appelant le CLI one-shot</td></tr>
   </table></div>
 
-  <h3>Auth du moteur en CI</h3>
+  <h3>Le moteur LLM</h3>
   <div class="card twrap"><table>
-    <tr><th>Sujet</th><th>État</th></tr>
-    <tr><td class="wrap-first">Passerelle d'entreprise</td><td><span class="chip c-ok">Validé en CI</span> <code>ANTHROPIC_BASE_URL</code> + <code>ANTHROPIC_AUTH_TOKEN</code> sont hérités par <code>claude -p</code> depuis l'environnement : <b>rien à coder</b>. Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code>, les proxies rejettent souvent les en-têtes de prompt caching.</td></tr>
-    <tr><td class="wrap-first">API directe</td><td><span class="chip c-ok">Supporté</span> <code>ANTHROPIC_API_KEY</code> — le plus simple pour démarrer hors contexte d'entreprise</td></tr>
-    <tr><td class="wrap-first">Quel modèle répond ?</td><td>Derrière une passerelle, ce n'est pas forcément ce qui a été demandé. Le modèle réellement utilisé est journalisé à chaque review (<code>modèle=…</code>).</td></tr>
-    <tr><td class="wrap-first">Secrets et builds de PR</td><td><span class="chip c-ko">Piège</span> les Secrets Bitrise ne sont pas exposés aux builds déclenchés par une PR sauf case cochée. Déclencher par l'<b>API Build Trigger</b> contourne proprement.</td></tr>
+    <tr><th>Besoin</th><th>Comment</th></tr>
+    <tr><td class="wrap-first"><b>Passerelle d'entreprise</b></td><td><span class="chip c-ok">Validé en CI</span> <code>ANTHROPIC_BASE_URL</code> + <code>ANTHROPIC_AUTH_TOKEN</code> dans l'environnement, hérités par <code>claude -p</code>. <b>Rien à coder.</b><br>Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code> : les proxies rejettent souvent les en-têtes de prompt caching.</td></tr>
+    <tr><td class="wrap-first"><b>API directe</b></td><td><code>ANTHROPIC_API_KEY</code>. Le plus simple hors entreprise.</td></tr>
+    <tr><td class="wrap-first"><b>Wrapper maison</b></td><td><code>CLAUDE_BIN=/chemin/wrapper</code>. Mêmes arguments, même enveloppe <code>--output-format json</code>.</td></tr>
+    <tr><td class="wrap-first"><b>Un autre modèle</b></td><td><code>model</code> dans le <code>reviewer.toml</code>, ou <code>CLAUDE_MODEL</code> pour tous.</td></tr>
+    <tr><td class="wrap-first"><b>Savoir qui a répondu</b></td><td>Derrière une passerelle, ce n'est pas forcément ce qui a été demandé. Le modèle réel est journalisé à chaque review.</td></tr>
+    <tr><td class="wrap-first"><b>Secrets et builds de PR</b></td><td><span class="chip c-ko">Piège</span> les Secrets Bitrise ne sont pas exposés aux builds déclenchés par une PR sauf case cochée. Déclencher par l'API Build Trigger contourne.</td></tr>
   </table></div>
+  <div class="warnbox"><span class="chip c-ko">Ce n'est pas qu'un endpoint</span> <code>claude -p</code> est un <b>agent</b> : il ouvre les fichiers du dépôt, cherche dedans, lit l'historique git. Une API de complétion classique ne fait rien de tout ça. Y basculer, c'est un <b>backend à écrire</b>, pas une variable à poser.</div>
 
   <h2>Sécurité</h2>  <div class="ess"><span class="chip c-ko">À lire avant tout déploiement</span> Un auteur de PR est <b>non fiable</b>. Sans précautions, le diff peut pousser le moteur à écrire des fichiers (RCE) ou exfiltrer des secrets dans un commentaire public. Les garde-fous ci-dessous sont implémentés ; le <b>sandbox réseau reste à câbler au déploiement</b>.</p>
 
