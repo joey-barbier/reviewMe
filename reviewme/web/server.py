@@ -294,6 +294,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 def main() -> None:
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(__doc__.strip())
+        print("\\nUsage : reviewme-web [port]   (défaut 8420, écoute sur 127.0.0.1)")
+        return
+
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8420
     server = HTTPServer(("127.0.0.1", port), DashboardHandler)
     print(f"ReviewMe Dashboard (read-only) : http://127.0.0.1:{port}")

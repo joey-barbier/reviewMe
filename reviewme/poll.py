@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import signal
+import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -70,6 +71,14 @@ def _start_dashboard(logger: logging.Logger) -> None:
 
 
 def main() -> None:
+    # `--help` ne doit jamais démarrer la boucle : sans ça, une frappe d'exploration
+    # lance un daemon qui consomme du budget.
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(__doc__.strip())
+        print("\nUsage : reviewme-poll   (réglages par .env : GITHUB_REPO, POLL_INTERVAL, "
+              "REVIEW_LABEL, MAX_BUDGET_USD)")
+        return
+
     signal.signal(signal.SIGINT, _handle_signal)
     signal.signal(signal.SIGTERM, _handle_signal)
 

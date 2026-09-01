@@ -22,6 +22,7 @@ import hmac
 import json
 import logging
 import os
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -94,6 +95,11 @@ def _make_handler(config, secret: str, logger: logging.Logger):
 
 
 def main() -> None:
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(__doc__.strip())
+        print("\nUsage : reviewme-webhook   (réglages par .env : WEBHOOK_SECRET obligatoire, "
+              "WEBHOOK_HOST, WEBHOOK_PORT)")
+        return
     secret = os.environ.get("WEBHOOK_SECRET", "")
     if not secret:
         raise SystemExit("WEBHOOK_SECRET non défini : le webhook refuse de démarrer (fail-closed).")

@@ -8,8 +8,17 @@ echo ""
 errors=0
 
 printf "Checking Python... "
+# La version compte : `command -v python3` renvoie souvent le Python du système, trop
+# ancien pour ce projet. uv installera de toute façon la bonne version dans le venv.
 if command -v python3 &>/dev/null; then
-    echo "OK ($(python3 --version 2>&1 | cut -d' ' -f2))"
+    py_version=$(python3 --version 2>&1 | cut -d' ' -f2)
+    py_major=$(echo "$py_version" | cut -d. -f1)
+    py_minor=$(echo "$py_version" | cut -d. -f2)
+    if [ "$py_major" -gt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -ge 13 ]; }; then
+        echo "OK ($py_version)"
+    else
+        echo "$py_version — trop ancien, 3.13+ requis (uv l'installera dans le venv)"
+    fi
 else
     echo "MISSING - Install Python 3.13+"
     errors=1
@@ -104,6 +113,11 @@ REVIEW_LABEL=${review_label}
 CLAUDE_AGENT=${claude_agent}
 MAX_BUDGET_USD=${max_budget}
 POLL_INTERVAL=${poll_interval}
+
+# Reviewers specialises : creer une instance puis decommenter.
+#   reviewme init-project <repo> --reviewers tech,i18n
+# REVIEWME_CONFIG_HOME=
+# PROJECT=
 EOF
 
     echo ""
@@ -113,7 +127,13 @@ fi
 # --- Install deps ---
 echo ""
 echo "Installing dependencies..."
-uv sync
+# Sans --extra, uv retire les extras deja installes. On preserve github-app s'il l'etait.
+if [ -f .venv/bin/python ] && .venv/bin/python -c "import jwt" 2>/dev/null; then
+    uv sync --extra github-app
+else
+    uv sync
+    echo "  (auth GitHub App : uv sync --extra github-app)"
+fi
 
 # --- Test connection ---
 echo ""
