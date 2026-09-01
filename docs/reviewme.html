@@ -361,7 +361,41 @@ install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code>
   <p>Les reviewers sont les <b>sous-dossiers de <code>reviewers/</code></b>. Rien à déclarer ailleurs : ajouter un reviewer = créer son dossier. Le mettre en sommeil = <code>enabled = false</code> dans son <code>reviewer.toml</code>.</p>
   <div class="warnbox"><span class="chip c-ko">Piège</span> L'<code>id</code> d'un reviewer entre dans le marqueur de dédup. Le renommer sur un dépôt déjà commenté fait <b>reposter tous ses commentaires en double</b>.</div>
 
-<h2>Nommer un reviewer</h2>
+<h2><code>reviewer.toml</code> — référence</h2>
+  <p>Toutes les clés lues par le moteur. Tout est optionnel : un <code>reviewer.toml</code> vide donne un reviewer <code>inline</code> qui tourne sur chaque PR.</p>
+  <div class="card twrap"><table>
+    <tr><th>Clé</th><th>Valeurs</th><th>Défaut</th><th>Rôle</th></tr>
+    <tr><td class="wrap-first"><code>output_mode</code></td><td><code>inline</code> · <code>global</code> · <code>mixed</code></td><td><code>inline</code></td><td>Commentaires ancrés sur des lignes, un unique commentaire global, ou les deux</td></tr>
+    <tr><td class="wrap-first"><code>priority</code></td><td>entier</td><td><code>100</code></td><td>Ordre d'exécution — petit = d'abord</td></tr>
+    <tr><td class="wrap-first"><code>enabled</code></td><td><code>true</code> · <code>false</code></td><td><code>true</code></td><td><code>false</code> met le reviewer en sommeil sans supprimer son dossier</td></tr>
+    <tr><td class="wrap-first"><code>requires</code></td><td>liste — <code>"jira_ticket"</code></td><td>vide</td><td>Contextes sans lesquels le reviewer est skippé. Valeur inconnue = erreur au chargement</td></tr>
+    <tr><td class="wrap-first"><code>model</code></td><td>nom de modèle</td><td>vide → <code>CLAUDE_MODEL</code>, sinon défaut CLI</td><td>Modèle de ce reviewer seulement</td></tr>
+    <tr><td class="wrap-first"><code>max_budget_usd</code></td><td>nombre</td><td>vide → <code>MAX_BUDGET_USD</code></td><td>Plafond de coût de ce reviewer</td></tr>
+    <tr><td class="wrap-first"><code>precheck</code></td><td>chemin</td><td>vide</td><td>Script déterministe, <b>confiné au dossier du reviewer</b>. Sa sortie devient des faits établis</td></tr>
+    <tr><td class="wrap-first"><code>[when] paths</code></td><td>liste de globs</td><td>vide = tourne toujours</td><td>Ne se déclenche que si le diff touche l'un de ces chemins</td></tr>
+    <tr><td class="wrap-first"><code>[context] read</code></td><td>liste de chemins</td><td>vide</td><td>Conventions lues dans le dépôt reviewé. Fichier = injecté, dossier = inventaire</td></tr>
+    <tr><td class="wrap-first"><code>[plugins] marketplaces</code></td><td>liste</td><td>vide</td><td>Marketplaces Claude Code à déclarer avant installation</td></tr>
+    <tr><td class="wrap-first"><code>[plugins] install</code></td><td>liste</td><td>vide</td><td>Plugins à installer avant la review (idempotent)</td></tr>
+  </table></div>
+  <pre><code># exemple complet
+output_mode    = "mixed"
+priority       = 30
+model          = "…"
+precheck       = "precheck.py"
+requires       = ["jira_ticket"]
+# enabled      = false
+
+[when]
+paths = ["**/*.strings", "**/i18n/**/*.json"]
+
+[context]
+read = ["AGENTS.md", "docs/"]
+
+[plugins]
+marketplaces = ["owner/marketplace-repo"]
+install      = ["mon-plugin"]</code></pre>
+
+  <h2>Nommer un reviewer</h2>
   <p>L'<code>id</code> d'un reviewer est le <b>nom de son dossier</b>. Il est libre : <code>tech</code>, <code>us</code> et <code>i18n</code> sont les conventions du squelette, pas des valeurs imposées.</p>
   <pre><code>reviewers/securite-mobile/     # parfaitement valide
 reviewers/perf/

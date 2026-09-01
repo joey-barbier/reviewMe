@@ -136,6 +136,8 @@ marketplaces = ["owner/marketplace-repo"]
 install      = ["mon-plugin"]
 ```
 
+Référence complète des clés (valeurs possibles et défauts) : [`docs/reviewme.html`](docs/reviewme.html) § Projets & instances.
+
 `[context] read` est le point important : les conventions d'un projet vivent déjà dans son
 dépôt. Un **fichier** voit son contenu injecté, un **dossier** son inventaire ; un chemin
 introuvable déclenche un WARNING — un chemin mort se voit au lieu de priver silencieusement
