@@ -1,6 +1,6 @@
 """Configuration ReviewMe (pilotée par .env — le format éprouvé sur 3 mois).
 
-Note ADR v2 : on garde `.env` pour le prototype (le `reviewme.toml` complet + mapping
+La configuration passe par l'environnement (`.env`) ; le comportement de review passe
 multi-équipes est différé en v2). Les secrets viennent UNIQUEMENT de l'environnement.
 """
 from __future__ import annotations

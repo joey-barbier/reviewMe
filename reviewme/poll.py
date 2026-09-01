@@ -1,8 +1,8 @@
-"""Entrée boucle (mode VPS / legacy) : poll GitHub puis `run_review` par PR.
+"""Entrée boucle (mode VPS) : poll GitHub puis `run_review` par PR.
 
 Chaque PR passe par la MÊME fonction one-shot que le CLI et le webhook. Le mode d'entrée
 est un simple wrapper autour d'elle. Sur un VPS, un cron/systemd-timer appelant le CLI
-one-shot est préférable à cette boucle résidente ; elle reste utile en dev/legacy.
+one-shot est préférable à cette boucle résidente ; elle reste utile en dev.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from .state import failed_at, is_reviewed
 _shutdown = False
 
 
-def _handle_signal(sig: int, frame) -> None:  # noqa: ARG001
+def _handle_signal(sig: int, frame) -> None:
     global _shutdown
     _shutdown = True
 
@@ -31,7 +31,7 @@ def poll_once(gh: GitHubClient, config, logger: logging.Logger) -> int:
     logger.info("Poll (%s)...", mode)
     try:
         prs = gh.list_open_prs() if config.review_all_prs else gh.list_labeled_prs()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.error("Échec récupération des PR : %s", e)
         return 0
 
@@ -58,6 +58,7 @@ def poll_once(gh: GitHubClient, config, logger: logging.Logger) -> int:
 
 def _start_dashboard(logger: logging.Logger) -> None:
     from http.server import HTTPServer
+
     from .web.server import DashboardHandler
     try:
         server = HTTPServer(("127.0.0.1", 8420), DashboardHandler)

@@ -1,6 +1,6 @@
 """Dashboard ReviewMe — read-only, 127.0.0.1 uniquement.
 
-Durcissements ADR sécurité (vs MVP) :
+Invariants de sécurité :
 - SUPPRIMÉ : header `Access-Control-Allow-Origin: *` (permettait à n'importe quel onglet
   navigateur de lire les données internes en cross-origin).
 - SUPPRIMÉ : l'endpoint d'ÉCRITURE non authentifié `POST /api/requeue/<pr>` (CSRF +
@@ -15,7 +15,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime, timezone
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -62,7 +62,7 @@ def _review_datetime(filename: str) -> datetime | None:
     if not m:
         return None
     try:
-        return datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        return datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S").replace(tzinfo=UTC)
     except ValueError:
         return None
 
@@ -71,7 +71,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(WEB_DIR), **kwargs)
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/state":
             self._json(self._get_state())
@@ -136,7 +136,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def _get_hall_of_fame(self, sprint: str | None = None) -> dict:
         dated = self._get_dated_reviews()
         sprint_nums = sorted({_sprint_num_for_date(dt.date()) for dt, _ in dated if dt is not None}, reverse=True)
-        current_sprint = _sprint_num_for_date(datetime.now(timezone.utc).date())
+        current_sprint = _sprint_num_for_date(datetime.now(UTC).date())
 
         sprints_meta = [{"id": "all", "label": "Depuis le début", "num": None, "is_current": False}]
         for n in sprint_nums:
@@ -289,7 +289,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
         return {"total": total_stats, "categories": categories, "dev_leaderboard": dev_leaderboard}
 
-    def log_message(self, format, *args):  # noqa: A002, ARG002
+    def log_message(self, format, *args):
         pass
 
 

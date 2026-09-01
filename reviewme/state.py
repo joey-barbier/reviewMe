@@ -1,6 +1,6 @@
 """Cache d'état local (last_reviewed_sha par PR), protégé par un verrou inter-process.
 
-Correctif ADR D8 : le MVP faisait un read-modify-write sans lock alors que 4 threads
+Le read-modify-write se fait sous verrou : sans lui, plusieurs threads
 écrivaient en parallèle -> lost updates. Ici toute mutation passe par `_locked()` qui
 prend un `flock` exclusif sur data/state.lock et exécute load->modify->save en section
 critique.
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 from .config import STATE_FILE, STATE_LOCK
@@ -69,7 +69,7 @@ def mark_reviewed(pr_number: int, head_sha: str, title: str, status: str = "succ
             "head_sha": head_sha,
             "title": title,
             "status": status,
-            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "reviewed_at": datetime.now(UTC).isoformat(),
         }
         data.setdefault("errors", {}).pop(str(pr_number), None)
         _save_raw(data)
@@ -82,7 +82,7 @@ def mark_error(pr_number: int, head_sha: str, title: str, error: str) -> None:
             "head_sha": head_sha,
             "title": title,
             "error": error,
-            "failed_at": datetime.now(timezone.utc).isoformat(),
+            "failed_at": datetime.now(UTC).isoformat(),
         }
         _save_raw(data)
 

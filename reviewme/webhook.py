@@ -10,7 +10,7 @@ SÉCURITÉ (invariants) :
   scrub de sortie).
 - ⚠️ DÉPLOIEMENT : exécuter derrière un reverse-proxy TLS et faire tourner le moteur dans
   un SANDBOX sans réseau sortant (hors GitHub) — mitigation n°1 de la prompt-injection.
-  Non géré ici (prototype) : à câbler au niveau infra (conteneur/systemd + firewall).
+  Non géré ici : à câbler au niveau infra (conteneur/systemd + firewall).
 
 Prototype : serveur stdlib, mono-worker + thread par review. Pour de la charge, préférer
 un vrai serveur ASGI + une file de jobs (v2).
@@ -43,7 +43,7 @@ def verify_signature(secret: str, raw_body: bytes, header: str | None) -> bool:
 
 def _make_handler(config, secret: str, logger: logging.Logger):
     class WebhookHandler(BaseHTTPRequestHandler):
-        def log_message(self, *args):  # noqa: ARG002 — silence le logging par défaut
+        def log_message(self, *args):
             return
 
         def _reply(self, code: int, msg: str) -> None:
@@ -52,7 +52,7 @@ def _make_handler(config, secret: str, logger: logging.Logger):
             self.end_headers()
             self.wfile.write(msg.encode("utf-8"))
 
-        def do_POST(self) -> None:  # noqa: N802
+        def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", "0") or "0")
             if length <= 0 or length > _MAX_BODY:
                 return self._reply(413, "payload invalide")

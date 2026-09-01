@@ -26,8 +26,7 @@ from __future__ import annotations
 import os
 import tomllib
 from dataclasses import dataclass, field
-from pathlib import Path
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from .config import CONFIG_DIR, Config
 
@@ -98,7 +97,7 @@ class ProjectConfig:
     name: str
     directory: Path | None
     reviewers: tuple[ReviewerSpec, ...] = field(default_factory=tuple)
-    legacy: bool = False                   # True = projet virtuel de rétro-compat v0.2
+    simple: bool = False                   # True = projet virtuel du mode simple
 
     def reviewer(self, reviewer_id: str) -> ReviewerSpec | None:
         return next((r for r in self.reviewers if r.id == reviewer_id), None)
@@ -229,7 +228,7 @@ def load_project(name: str, base_dir: Path | None = None) -> ProjectConfig:
     return ProjectConfig(name=name, directory=pdir, reviewers=active)
 
 
-def _legacy_project(config: Config) -> ProjectConfig:
+def _simple_project(config: Config) -> ProjectConfig:
     """Projet virtuel du **mode simple** : un seul reviewer, aucune instance à créer.
 
     Il réutilise le squelette de `config/templates/` — la même persona que celle qu'on
@@ -245,12 +244,12 @@ def _legacy_project(config: Config) -> ProjectConfig:
         common=_concat_markdown(TEMPLATES_DIR / "common"),
         directory=tech,
     )
-    return ProjectConfig(name="(mode simple)", directory=None, reviewers=(spec,), legacy=True)
+    return ProjectConfig(name="(mode simple)", directory=None, reviewers=(spec,), simple=True)
 
 
 def resolve_project(config: Config) -> ProjectConfig:
-    """Le projet actif : `config.project` s'il est défini, sinon le projet virtuel v0.2."""
-    return load_project(config.project, projects_dir(config)) if config.project else _legacy_project(config)
+    """Le projet actif : `config.project` s'il est défini, sinon celui du mode simple."""
+    return load_project(config.project, projects_dir(config)) if config.project else _simple_project(config)
 
 
 # --------------------------------------------------------------------------- sélection

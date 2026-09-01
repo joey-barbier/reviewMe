@@ -28,3 +28,17 @@ reviewme = "reviewme.cli:main"            # one-shot : reviewme review --repo O/
 reviewme-poll = "reviewme.poll:main"       # boucle de poll (mode VPS/legacy)
 reviewme-webhook = "reviewme.webhook:main" # serveur webhook (HMAC)
 reviewme-web = "reviewme.web.server:main"  # dashboard read-only
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  "E501",     # longueur de ligne : les commentaires explicatifs priment
+  "RUF001",   # caractères « ambigus » : la doc et les prompts sont en français
+  "RUF002",
+  "RUF003",
+  "SIM115",   # les deux `open()` concernés sont fermés dans un `finally`
+]

@@ -1,10 +1,10 @@
-"""Logs : JSON structuré (fichier) + lisible (console). Porté du MVP."""
+"""Logs : JSON structuré (fichier) + lisible (console)."""
 from __future__ import annotations
 
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 
 from .config import LOG_FILE, REVIEWS_DIR
@@ -18,7 +18,7 @@ def _ensure_dirs() -> None:
 class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         entry = {
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "msg": record.getMessage(),
         }
@@ -48,7 +48,7 @@ def setup_logging(name: str = "reviewme") -> logging.Logger:
 def save_review(pr_number: int, review_data: dict) -> Path:
     """Sauvegarde une review individuelle en JSON local (data/reviews/)."""
     _ensure_dirs()
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filepath = REVIEWS_DIR / f"pr_{pr_number}_{ts}.json"
     filepath.write_text(json.dumps(review_data, indent=2, ensure_ascii=False), encoding="utf-8")
     return filepath

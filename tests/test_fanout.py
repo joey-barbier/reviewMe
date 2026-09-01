@@ -15,14 +15,21 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from reviewme.config import Config                                    # noqa: E402
-from reviewme.diff_utils import LinePos                                # noqa: E402
-from reviewme.models import Finding, ReviewResult, Severity           # noqa: E402
-from reviewme.projects import (                                        # noqa: E402
-    ProjectConfig, ProjectConfigError, ReviewerSpec, load_project, select_reviewers,
+from reviewme.config import Config
+from reviewme.diff_utils import LinePos
+from reviewme.models import Finding, ReviewResult, Severity
+from reviewme.projects import (
+    ProjectConfig,
+    ProjectConfigError,
+    ReviewerSpec,
+    load_project,
+    select_reviewers,
 )
-from reviewme.reconciler import (                                      # noqa: E402
-    PrContext, _apply_cap, marker_key, prepare,
+from reviewme.reconciler import (
+    PrContext,
+    _apply_cap,
+    marker_key,
+    prepare,
 )
 
 LOGGER = logging.getLogger("test")
@@ -222,6 +229,7 @@ def test_fetch_de_la_branche_de_base_ne_casse_jamais_la_review():
 def test_dry_run_affiche_ce_qui_serait_poste():
     """Sans le contenu, le dry-run ne permet ni de juger la review ni de calibrer le seuil."""
     import logging as _logging
+
     from reviewme.reconciler import post_all
 
     lignes = []
@@ -272,6 +280,7 @@ def test_id_de_reviewer_libre():
 def test_env_dinstance_ne_peut_pas_choisir_le_binaire_execute():
     """Une config peut venir d'une PR : `.reviewme/.env` avec CLAUDE_BIN = RCE."""
     import os as _os
+
     from reviewme.config import _load_instance_env
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -343,8 +352,8 @@ def test_modele_par_reviewer_prime_sur_la_variable_globale():
     """Un relecteur factuel n'a pas besoin du même modèle qu'une analyse d'architecture."""
     import os as _os
 
-    from reviewme.reviewer import _build_prompt  # noqa: F401  (import du module suffit)
     import reviewme.reviewer as R
+    from reviewme.reviewer import _build_prompt
 
     spec_avec = _spec("i18n", model="modele-du-reviewer")
     spec_sans = _spec("tech")
@@ -397,6 +406,7 @@ def test_context_read_injecte_les_fichiers_et_liste_les_dossiers():
 def test_context_read_signale_un_chemin_mort():
     """Le gain du déclaratif : un chemin obsolète se voit au lieu de priver le reviewer."""
     import logging as _logging
+
     from reviewme.repo_context import build_repo_context
 
     captured = []

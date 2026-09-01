@@ -1,6 +1,6 @@
 """ReviewMe — bot de code review IA : commentaires inline ligne-par-ligne + cycle de vie des threads.
 
-Layout plat (post-challenge ADR v2) :
+Modules :
   config.py        configuration (.env)
   models.py        Finding / ReviewResult + parsing robuste
   diff_utils.py    parseur de patch -> positions inline valides (anti-422)
@@ -15,7 +15,7 @@ Layout plat (post-challenge ADR v2) :
   state.py         cache last_reviewed_sha (flock inter-process)
   logging_.py      logs JSON + console
   cli.py           entrée one-shot : `reviewme review --repo O/R --pr N`
-  poll.py          entrée boucle (mode VPS legacy)
+  poll.py          entrée boucle (mode VPS)
   webhook.py       entrée webhook (stub documenté — v2)
   web/             dashboard (read-only, durci)
 """

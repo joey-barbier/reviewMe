@@ -1,13 +1,13 @@
 """Client REST GitHub pour ReviewMe.
 
-Étend le client du MVP avec ce qu'exige l'inline + le cycle de vie des threads :
+Ce qu'exige l'inline et le cycle de vie des threads :
 - list_review_comments : lister les commentaires de review (dédup)
 - create_review        : poster une review avec un batch de commentaires inline (1 write)
 - reply_to_comment     : répondre dans un thread existant (ré-ancrage / dialogue dev)
 - list_open_prs        : mode "toute PR ouverte" (sans filtre label)
 - get_authenticated_login : identité du token
 
-Le resolve/unresolve de thread (GraphQL) est volontairement ABSENT du prototype
+Le resolve/unresolve de thread (GraphQL) est volontairement ABSENT
 (différé v2 : GitHub replie déjà automatiquement les commentaires outdated, et le
 resolve exige un 2e client + potentiellement le scope Contents R/W).
 """
@@ -164,7 +164,7 @@ class GitHubClient:
 
     # ------------------------------------------------------------------ écriture
     def post_issue_comment(self, pr_number: int, body: str) -> dict:
-        """Commentaire global (issue comment) — chemin de fallback éprouvé du MVP."""
+        """Commentaire global (issue comment) — chemin de repli quand l'inline est impossible."""
         resp = self._request(
             "POST", f"{API_BASE}/repos/{self._repo}/issues/{pr_number}/comments",
             json={"body": body},

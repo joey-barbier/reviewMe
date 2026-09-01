@@ -1,6 +1,6 @@
 """Moteur de review : invoque `claude -p` et récupère des findings STRUCTURÉS.
 
-Durcissements ADR v2 (post-challenge sécurité) :
+Invariants de sécurité :
 - PLUS de `Write` dans l'allowlist. L'agent ne produit AUCUN fichier ; sa réponse finale
   (JSON) est lue dans le champ `result` de `--output-format json`. Cela supprime à la
   fois le vecteur d'écriture arbitraire ET le round-trip par fichier de sortie.
@@ -8,7 +8,7 @@ Durcissements ADR v2 (post-challenge sécurité) :
 - Allowlist verrouillée ici, non surchargeable par la config.
 
 Si la sortie n'est pas un JSON exploitable, on renvoie parsed_ok=False : l'appelant
-retombe sur un unique commentaire global (chemin éprouvé du MVP), sans jamais crasher.
+retombe sur un unique commentaire global, sans jamais crasher.
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
                spec: ReviewerSpec | None = None, extra_context: str = "") -> ReviewResult:
     """Lance la review d'UN reviewer et renvoie un ReviewResult (findings + metadata).
 
-    `spec` absent -> reviewer du projet actif (ou projet virtuel v0.2 rétro-compatible).
+    `spec` absent -> reviewer du projet actif, ou du projet virtuel du mode simple.
     `extra_context` porte les données injectées par le core (ticket Jira, sortie d'un
     precheck déterministe) — jamais des instructions de l'agent lui-même.
     """

@@ -3,7 +3,7 @@
 Le moteur (`reviewer.py`) demande à `claude -p` un JSON structuré. On ne fait JAMAIS
 confiance à sa forme : `parse_review_output` extrait le JSON même noyé dans du texte /
 des fences ```json, et renvoie None si c'est irrécupérable -> l'appelant retombe alors
-sur un unique commentaire global (le chemin éprouvé du MVP), plutôt que de crasher.
+sur un unique commentaire global, plutôt que de crasher.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class Severity(str, Enum):
     MINOR = "MINOR"
 
     @classmethod
-    def coerce(cls, value: str) -> "Severity":
+    def coerce(cls, value: str) -> Severity:
         v = (value or "").strip().upper()
         for s in cls:
             if s.value == v:
@@ -37,7 +37,7 @@ class Finding:
     """Un finding de review. Les champs `line`/`path` sont côté RIGHT (nouveau fichier).
 
     `snippet` et `rule_id` sont de l'AFFICHAGE uniquement — jamais utilisés pour le
-    fingerprint (ils sont narrés par le LLM donc instables ; cf. ADR D4 post-challenge).
+    fingerprint : narrés par le LLM, donc instables.
     Le fingerprint s'ancre sur le contenu réel de la ligne du diff (`line_content`).
     """
     path: str

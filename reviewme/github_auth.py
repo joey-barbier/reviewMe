@@ -84,7 +84,7 @@ class AppTokenProvider(TokenProvider):
         payload = {"iat": now - 60, "exp": now + _JWT_TTL_S, "iss": self._app_id}
         try:
             return jwt.encode(payload, self._private_key, algorithm="RS256")
-        except Exception as e:  # noqa: BLE001 - message clair plutôt qu'une trace crypto
+        except Exception as e:
             raise GitHubAuthError(f"signature du JWT impossible (clé .pem invalide ?) : {e}") from e
 
     def _headers(self, bearer: str) -> dict[str, str]:

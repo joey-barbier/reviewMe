@@ -1,8 +1,7 @@
 """Réconciliateur : transforme des findings en commentaires inline, avec dédup et
-cycle de vie des threads. C'est le cœur ajouté par rapport au MVP (qui postait 1 seul
-commentaire global).
+cycle de vie des threads.
 
-Garanties (ADR v2 post-challenge) :
+Garanties :
 - ANTI-422 : chaque finding est validé contre le diff (`diff_utils.valid_positions`)
   AVANT le post. Les findings hors-diff vont dans le summary, jamais en inline. Sur un
   422 résiduel, on retombe sur un commentaire global (rien n'est perdu).
@@ -59,14 +58,14 @@ def fingerprint_hash(path: str, line_content: str) -> str:
     """Hash d'ancrage d'un finding. NE DOIT PAS CHANGER sans plan de migration.
 
     Volontairement INDÉPENDANT du numéro de ligne : c'est ce qui permet de ré-ancrer sans
-    doublon quand le code se déplace (cf. ADR v2 D4). Limite acceptée : deux lignes au contenu
+    doublon quand le code se déplace. Limite acceptée : deux lignes au contenu
     normalisé identique dans un même fichier partagent le hash (rare ; le suivi fin de la 2e
     occurrence peut être perdu). Un index par (marqueur, ligne) est une piste v2.
 
     Le `reviewer_id` n'entre PAS ici : il est ajouté comme préfixe du marqueur (cf.
     `fingerprint`), ce qui rend les marqueurs v0.2 rétro-compatibles sans recalcul.
     """
-    return hashlib.sha1(f"{path}\n{normalize_line(line_content)}".encode("utf-8")).hexdigest()[:10]
+    return hashlib.sha1(f"{path}\n{normalize_line(line_content)}".encode()).hexdigest()[:10]
 
 
 def fingerprint(path: str, line_content: str,
@@ -81,7 +80,7 @@ def summary_fingerprint(reviewer_id: str) -> str:
     Ancré sur le seul reviewer : il n'y a qu'un commentaire global par reviewer et par PR,
     qu'on met à jour de commit en commit au lieu d'en empiler un nouveau à chaque fois.
     """
-    h = hashlib.sha1(f"__summary__\n{reviewer_id}".encode("utf-8")).hexdigest()[:10]
+    h = hashlib.sha1(f"__summary__\n{reviewer_id}".encode()).hexdigest()[:10]
     return f"<!-- reviewme:{reviewer_id}:{h} -->"
 
 
@@ -204,7 +203,7 @@ def prepare(pr: dict, config: Config, ctx: PrContext, result: ReviewResult,
               "invalid": 0, "dropped_low": 0, "capped": 0, "fallback": False}
     prep = PreparedReview(reviewer_id=reviewer_id, output_mode=output_mode, counts=counts)
 
-    # --- Fallback : JSON inexploitable -> commentaire global (chemin éprouvé du MVP) ---
+    # --- Repli : JSON inexploitable -> commentaire global ---
     if not result.parsed_ok:
         logger.warning("PR #%s [%s] : sortie agent non-JSON, fallback commentaire global",
                        pr_number, reviewer_id)
@@ -378,7 +377,7 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
 
 def reconcile(pr: dict, config: Config, gh: GitHubClient, result: ReviewResult,
               logger: logging.Logger, reviewer_id: str | None = None) -> dict:
-    """Façade mono-reviewer (chemin v0.2) : prépare puis poste en une passe."""
+    """Façade mono-reviewer : prépare puis poste en une passe."""
     reviewer_id = reviewer_id or getattr(config, "reviewer_id", None) or LEGACY_REVIEWER_ID
     ctx = load_pr_context(gh, pr["number"])
     prep = prepare(pr, config, ctx, result, logger, reviewer_id)

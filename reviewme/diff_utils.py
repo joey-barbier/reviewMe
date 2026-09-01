@@ -7,7 +7,7 @@ commentables côté RIGHT, et on filtre les findings AVANT de poster.
 
 Une ligne RIGHT-commentable = une ligne présente dans le nouveau fichier à l'intérieur
 d'un hunk : ligne ajoutée (`+`) ou ligne de contexte (` `). On garde aussi le contenu
-réel de la ligne, qui sert d'ancre STABLE au fingerprint (cf. ADR D4 post-challenge).
+réel de la ligne, qui sert d'ancre STABLE au fingerprint.
 """
 from __future__ import annotations
 

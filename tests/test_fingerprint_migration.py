@@ -15,8 +15,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from reviewme.diff_utils import normalize_line          # noqa: E402
-from reviewme.reconciler import (                        # noqa: E402
+from reviewme.diff_utils import normalize_line
+from reviewme.reconciler import (
     _MARKER_RE,
     LEGACY_REVIEWER_ID,
     fingerprint,

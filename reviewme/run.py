@@ -24,7 +24,12 @@ from concurrent.futures import ThreadPoolExecutor
 from .config import Config
 from .github_client import GitHubClient
 from .logging_ import save_review
-from .projects import ProjectConfigError, ReviewerSpec, resolve_project, select_reviewers
+from .projects import (
+    ProjectConfigError,
+    ReviewerSpec,
+    resolve_project,
+    select_reviewers,
+)
 from .reconciler import PreparedReview, load_pr_context, post_all, prepare
 from .reviewer import run_review as run_reviewer
 from .scrub import scrub_text
@@ -43,7 +48,7 @@ def _gather_context(pr: dict, config: Config, logger: logging.Logger) -> tuple[d
         ticket = fetch_ticket_context(pr, config, logger)
         if ticket:
             context["jira_ticket"] = ticket
-    except Exception as e:  # noqa: BLE001 — un contexte absent ne doit jamais casser la review
+    except Exception as e:
         logger.info("Contexte Jira indisponible (%s) — les reviewers qui l'exigent seront skippés", e)
     return context, set(context)
 
@@ -153,7 +158,7 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
                 for fut in futures:
                     try:
                         outcomes.append(fut.result())
-                    except Exception as e:  # noqa: BLE001 — un reviewer HS ne doit pas tuer les autres
+                    except Exception as e:
                         logger.error("PR #%s : reviewer en échec : %s", pr_number, e)
 
         if not outcomes:
@@ -203,7 +208,7 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
                     extra={"pr_number": pr_number, "pr_title": title, "status": "success"})
         return counts
 
-    except Exception as e:  # noqa: BLE001 — on veut journaliser toute panne sans crasher la boucle
+    except Exception as e:
         mark_error(pr_number, head_sha, title, str(e))
         logger.error("PR #%s : échec review : %s", pr_number, e,
                      extra={"pr_number": pr_number, "pr_title": title, "status": "error"})
