@@ -18,8 +18,6 @@ STATE_FILE = DATA_DIR / "state.json"
 STATE_LOCK = DATA_DIR / "state.lock"
 LOG_FILE = DATA_DIR / "reviews.log"
 CONFIG_DIR = ROOT_DIR / "config"
-PROMPTS_DIR = CONFIG_DIR / "prompts"
-GUIDELINES_DIR = CONFIG_DIR / "guidelines"
 
 
 @dataclass(frozen=True)
@@ -30,13 +28,12 @@ class Config:
     poll_interval: int = 300
     repo_path: str = "."
     max_budget_usd: float = 1.00
-    claude_agent: str = ""  # vide = persona auto-suffisant (config/prompts/system.md) ; sinon nom d'un agent Claude Code
+    claude_agent: str = ""  # vide = persona du reviewer ; sinon nom d'un agent Claude Code
     claude_bin: str = ""    # binaire de la CLI de review. Vide = `claude` du PATH. Permet de
                             # pointer un wrapper maison (passerelle interne, quotas, logs).
     # --- ajouts v2 (inline + garde-fous) ---
     confidence_threshold: int = 80        # findings < seuil non postés (rubrique officielle)
     bot_login: str = ""                   # login du bot si identité dédiée (sinon vide)
-    guidelines_pack: str = "_default"     # pack de guidelines à charger (ex. "ios")
     # --- ajouts v3 (reviewers multiples, ADR v3) ---
     # Auth GitHub App (identité dédiée) : si renseignée, elle prime sur le PAT.
     github_app_id: str = ""
@@ -151,7 +148,6 @@ def load_config(*, require_repo: bool = True) -> Config:
         claude_bin=os.environ.get("CLAUDE_BIN", ""),
         confidence_threshold=int(os.environ.get("CONFIDENCE_THRESHOLD", "80")),
         bot_login=os.environ.get("BOT_LOGIN", ""),
-        guidelines_pack=os.environ.get("GUIDELINES_PACK", "_default"),
         github_app_id=app_id,
         github_app_private_key_path=app_key,
         github_app_installation_id=os.environ.get("GITHUB_APP_INSTALLATION_ID", ""),

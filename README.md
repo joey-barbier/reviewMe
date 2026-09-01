@@ -177,7 +177,7 @@ essentielles :
 | Clé | Rôle |
 |---|---|
 | `REVIEWME_CONFIG_HOME` | Dépôt d'instance. Vide = `config/projects/` du moteur |
-| `PROJECT` | Projet à utiliser. Vide = mode simple : un seul reviewer, prompts de `config/prompts/` |
+| `PROJECT` | Projet à utiliser. Vide = mode simple : un seul reviewer, issu de `config/templates/` |
 | `GITHUB_TOKEN` **ou** `GITHUB_APP_ID` + `GITHUB_APP_PRIVATE_KEY_PATH` | Auth |
 | `REPO_PATH` | Clone local du repo reviewé (contexte de l'agent) |
 | `CONFIDENCE_THRESHOLD` | Findings sous ce seuil non postés (défaut 80) |

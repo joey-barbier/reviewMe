@@ -18,9 +18,8 @@ Arborescence attendue :
             tech/{reviewer.toml, system.md}
             us/{reviewer.toml, system.md}
 
-Rétro-compatibilité : sans `PROJECT`, on fabrique un projet virtuel à un seul reviewer
-(`tech`) qui lit les anciens emplacements (`config/prompts/system.md`,
-`config/guidelines/<pack>/`). Un déploiement v0.2 continue donc de tourner à l'identique.
+Mode simple : sans `PROJECT`, on fabrique un projet virtuel à un seul reviewer, qui
+réutilise le squelette de `config/templates/`. Aucune instance à créer pour démarrer.
 """
 from __future__ import annotations
 
@@ -30,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from pathlib import PurePosixPath
 
-from .config import CONFIG_DIR, GUIDELINES_DIR, PROMPTS_DIR, Config
+from .config import CONFIG_DIR, Config
 
 #: Emplacement par défaut des projets (dans le repo du core).
 PROJECTS_DIR = CONFIG_DIR / "projects"
@@ -51,7 +50,7 @@ def projects_dir(config=None) -> Path:
         return Path(home).expanduser() / "projects"
     return PROJECTS_DIR
 #: Contrat de sortie du core. Cherché à la racine de `config/`, puis à l'ancien emplacement.
-_CONTRACT_CANDIDATES = (CONFIG_DIR / "output-contract.md", PROMPTS_DIR / "output-contract.md")
+_CONTRACT_FILE = CONFIG_DIR / "output-contract.md"
 
 OUTPUT_MODES = ("inline", "global", "mixed")
 
@@ -101,10 +100,7 @@ class ProjectConfig:
 
 def load_output_contract() -> str:
     """Le contrat JSON du core (D1bis). Non surchargeable par un projet."""
-    for candidate in _CONTRACT_CANDIDATES:
-        if candidate.exists():
-            return candidate.read_text(encoding="utf-8")
-    return ""
+    return _CONTRACT_FILE.read_text(encoding="utf-8") if _CONTRACT_FILE.exists() else ""
 
 
 def _read_toml(path: Path) -> dict:
@@ -219,19 +215,22 @@ def load_project(name: str, base_dir: Path | None = None) -> ProjectConfig:
 
 
 def _legacy_project(config: Config) -> ProjectConfig:
-    """Projet virtuel reproduisant le comportement v0.2 (un seul reviewer `tech`)."""
-    system = (PROMPTS_DIR / "system.md")
-    pack_dir = GUIDELINES_DIR / config.guidelines_pack
-    if not pack_dir.is_dir():
-        pack_dir = GUIDELINES_DIR / "_default"
+    """Projet virtuel du **mode simple** : un seul reviewer, aucune instance à créer.
+
+    Il réutilise le squelette de `config/templates/` — la même persona que celle qu'on
+    obtiendrait avec `init-project`. Pas de jeu de prompts séparé à maintenir en double.
+    """
+    tech = TEMPLATES_DIR / "reviewers" / "tech"
+    system = tech / "system.md"
     spec = ReviewerSpec(
         id=config.reviewer_id or "tech",
-        project="(legacy)",
+        project="(mode simple)",
         system_prompt=system.read_text(encoding="utf-8") if system.exists() else "",
         output_mode="inline",
-        common=_concat_markdown(pack_dir),
+        common=_concat_markdown(TEMPLATES_DIR / "common"),
+        directory=tech,
     )
-    return ProjectConfig(name="(legacy)", directory=None, reviewers=(spec,), legacy=True)
+    return ProjectConfig(name="(mode simple)", directory=None, reviewers=(spec,), legacy=True)
 
 
 def resolve_project(config: Config) -> ProjectConfig:

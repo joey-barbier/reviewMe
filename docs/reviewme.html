@@ -157,7 +157,7 @@ td.wrap-first:first-child { white-space: normal; }
     <tr><th>Contexte</th><th>Comment</th></tr>
     <tr><td class="wrap-first"><b>En local</b><br>deux clones</td><td><code>git clone &lt;moteur&gt; ~/dev/reviewMe &amp;&amp; uv sync</code><br><code>git clone &lt;instance&gt; ~/dev/mon-instance</code><br><code>cd ~/dev/mon-instance &amp;&amp; cp .env.example .env &amp;&amp; ./reviewme projects</code><br><span class="chip c-mut">note</span> le lanceur cherche le moteur dans <code>REVIEWME_CORE</code>, puis <code>./.core</code>, puis un clone voisin</td></tr>
     <tr><td class="wrap-first"><b>En CI</b><br>un seul clone</td><td><code>git submodule add &lt;moteur&gt; .core</code> une fois, dans l'instance<br><code>git clone --recurse-submodules &lt;instance&gt; config</code><br><code>cd config &amp;&amp; ./reviewme review --pr "$PR"</code><br><span class="chip c-mut">note</span> aucune variable à poser ; sans <code>.venv</code> le lanceur passe par <code>uv run</code></td></tr>
-    <tr><td class="wrap-first"><b>Sans instance</b><br>mode simple</td><td>Un dépôt, un reviewer, pas de personas spécialisées :<br><code>uv run reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code><br><span class="chip c-mut">note</span> persona de <code>config/prompts/system.md</code>, règles de <code>config/guidelines/&lt;pack&gt;/</code></td></tr>
+    <tr><td class="wrap-first"><b>Sans instance</b><br>mode simple</td><td>Un dépôt, un reviewer, pas de personas spécialisées :<br><code>uv run reviewme review --repo OWNER/REPO --pr 1234 --dry-run</code><br><span class="chip c-mut">note</span> reviewer issu du squelette <code>config/templates/</code></td></tr>
   </table></div>
 
   <h2>Créer une instance</h2>
@@ -175,9 +175,8 @@ export REVIEWME_CONFIG_HOME=$PWD
     <tr><td>GITHUB_REPO</td><td>—</td><td><code>OWNER/REPO</code> cible</td></tr>
     <tr><td>REVIEW_LABEL</td><td><code>review-me</code></td><td>PR à reviewer (mode label)</td></tr>
     <tr><td>REVIEW_ALL_PRS</td><td><code>false</code></td><td><code>true</code> = toute PR ouverte (ignore le label — attention au coût)</td></tr>
-    <tr><td>GUIDELINES_PACK</td><td><code>_default</code></td><td><i>Mode simple uniquement</i> — dossier <code>config/guidelines/&lt;pack&gt;</code>. Ignoré dès que <code>PROJECT</code> est défini.</td></tr>
     <tr><td>REVIEWME_CONFIG_HOME</td><td><i>(vide)</i></td><td>Dépôt de config <b>externe</b> (ex. <code>~/dev/mon-instance</code>). Vide = <code>config/projects/</code> du repo.</td></tr>
-    <tr><td>PROJECT</td><td><i>(vide)</i></td><td>Dossier <code>&lt;projets&gt;/&lt;nom&gt;</code>. Vide = <b>mode simple</b> : un seul reviewer, prompts pris dans <code>config/prompts/</code>.</td></tr>
+    <tr><td>PROJECT</td><td><i>(vide)</i></td><td>Dossier <code>&lt;projets&gt;/&lt;nom&gt;</code>. Vide = <b>mode simple</b> : un seul reviewer, issu du squelette <code>config/templates/</code>.</td></tr>
     <tr><td>MAX_COMMENTS_PER_PR</td><td><code>10</code></td><td>Plafond de commentaires par PR, <b>tous reviewers confondus</b> (ADR v3 D6)</td></tr>
     <tr><td>REVIEWER_ID</td><td><code>tech</code></td><td>Reviewer du <b>mode simple</b>, tel qu'il apparaît dans le marqueur de dédup. <b>Ne jamais renommer</b> sur un dépôt déjà commenté.</td></tr>
     <tr><td>GITHUB_APP_ID</td><td>—</td><td>GitHub App : identité dédiée (<code>&lt;slug&gt;[bot]</code>) au lieu du PAT d'un humain</td></tr>
@@ -187,7 +186,7 @@ export REVIEWME_CONFIG_HOME=$PWD
     <tr><td>JIRA_AC_FIELD</td><td><code>customfield_10037</code></td><td>Champ des critères d'acceptation (varie selon l'instance Jira)</td></tr>
     <tr><td>CONFIDENCE_THRESHOLD</td><td><code>80</code></td><td>Findings sous ce seuil non postés</td></tr>
     <tr><td>MAX_BUDGET_USD</td><td><code>1.00</code></td><td>Plafond de coût <b>par reviewer</b> (surchargeable dans son <code>reviewer.toml</code>)</td></tr>
-    <tr><td>CLAUDE_AGENT</td><td><i>(vide)</i></td><td>Vide = persona auto-suffisant (<code>config/prompts/system.md</code>)</td></tr>
+    <tr><td>CLAUDE_AGENT</td><td><i>(vide)</i></td><td>Vide = persona du reviewer ; sinon un agent Claude Code nommé</td></tr>
     <tr><td>CLAUDE_BIN</td><td><i>(vide)</i></td><td>Binaire de la CLI de review. Vide = <code>claude</code> du PATH ; sinon un wrapper compatible.</td></tr>
     <tr><td>ANTHROPIC_BASE_URL</td><td>—</td><td>Passerelle interne (proxy compatible Anthropic). Héritée telle quelle par <code>claude -p</code>.</td></tr>
     <tr><td>CLAUDE_MODEL</td><td><i>(vide)</i></td><td>Modèle par défaut. Un reviewer peut le surcharger avec <code>model</code> dans son <code>reviewer.toml</code>.</td></tr>
@@ -425,7 +424,7 @@ PROJECT=ah-ios</code></pre>
   <div class="ess"><span class="chip c-info">L'essentiel</span> Le moteur renvoie des findings JSON ; ReviewMe <b>valide chaque ligne contre le diff</b> (sinon 422), <b>déduplique par un fingerprint stable</b>, poste en <b>un seul write</b>, et <b>répond dans les threads</b> quand une ligne a bougé.</p>
 
   <h2>1 · Findings structurés</h2>
-  <p>Le moteur (<code>claude -p</code>, persona <code>config/prompts/system.md</code>) répond par un JSON : <code>summary</code> + liste de <code>findings</code> <code>{path, line, severity, message, snippet, confidence}</code>. Si le JSON est invalide, ReviewMe <b>retombe sur un commentaire global</b> plutôt que de crasher : la review est livrée, en moins bien, jamais perdue.</p>
+  <p>Le moteur (<code>claude -p</code>, avec la persona du reviewer) répond par un JSON : <code>summary</code> + liste de <code>findings</code> <code>{path, line, severity, message, snippet, confidence}</code>. Si le JSON est invalide, ReviewMe <b>retombe sur un commentaire global</b> plutôt que de crasher : la review est livrée, en moins bien, jamais perdue.</p>
 
   <h2>2 · Validation anti-422</h2>
   <p>GitHub valide une review de façon <b>atomique</b> : un seul commentaire sur une ligne hors-diff rejette TOUTE la review. <code>diff_utils</code> parse les patches (<code>GET /pulls/{n}/files</code>) et calcule les lignes réellement commentables. Les findings hors-diff sont <b>basculés dans le summary</b>, jamais postés en inline.</p>
@@ -486,7 +485,6 @@ PROJECT=ah-ios</code></pre>
   <pre><code>config/    output-contract.md            (CORE — interface du parseur, non surchargeable)
            projects/&lt;repo&gt;/              common/, reviewers/&lt;id&gt;/
            templates/                    squelette copié par `reviewme init-project`
-           prompts/system.md, guidelines/{ios,_default}/   (mode simple, sans PROJECT)
 deploy/    github-actions/  bitrise-step.md  systemd/
 docs/      reviewme.html (cette doc)  archive/ (historique des décisions)
 data/      state.json  reviews/  reviews.log   (gitignoré — hors OSS)</code></pre>
