@@ -29,8 +29,11 @@ LINE = '        let authToken = "sk-live-XXXX"'
 
 
 def _legacy_hash(path: str, line_content: str) -> str:
-    """Formule EXACTE de la v0.2 (reconciler.py:42 avant migration). Ne pas 'moderniser'."""
-    return hashlib.sha1(f"{path}\n{normalize_line(line_content)}".encode("utf-8")).hexdigest()[:10]
+    """Formule d'origine, recopiée à l'identique. Ne pas la « moderniser » : c'est elle
+    qui sert de témoin — si `fingerprint_hash` s'en écarte, tous les commentaires déjà
+    postés deviennent orphelins."""
+    return hashlib.sha1(  # noqa: UP012 - encodage explicite : la formule doit rester littérale
+        f"{path}\n{normalize_line(line_content)}".encode("utf-8")).hexdigest()[:10]
 
 
 def test_hash_inchange_depuis_v02():
