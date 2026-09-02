@@ -35,6 +35,7 @@ from .reconciler import PreparedReview, load_pr_context, post_all, prepare
 from .reviewer import run_review as run_reviewer
 from .scrub import scrub_text
 from .state import is_reviewed, mark_error, mark_reviewed
+from .stats import enregistrer as enregistrer_stats
 
 
 def _gather_context(pr: dict, config: Config, logger: logging.Logger) -> tuple[dict, set[str]]:
@@ -211,6 +212,11 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
             "input_tokens": sum(r.metadata.get("input_tokens", 0) for _, r in outcomes),
             "output_tokens": sum(r.metadata.get("output_tokens", 0) for _, r in outcomes),
         })
+
+        # Compteurs agrégés, sans contenu : transportables par un cache de CI.
+        enregistrer_stats(pr_number, head_sha, author, project.name,
+                          [s.id for s, _ in outcomes], counts, total_cost,
+                          counts.get("duration_ms", 0) or 0, diff_size_kb, logger)
 
         if not config.dry_run:
             mark_reviewed(pr_number, head_sha, title, status="success")

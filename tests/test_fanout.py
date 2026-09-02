@@ -275,6 +275,44 @@ def test_id_de_reviewer_libre():
         assert sorted(r.id for r in P.load_project("p", root).reviewers) == ["perf", "securite-mobile"]
 
 
+# --------------------------------------------------------------- statistiques
+
+def test_stats_sans_contenu_et_idempotentes():
+    """Ces compteurs transitent par un cache de CI : aucun contenu de PR n'y entre.
+    Et rejouer un build ne doit pas gonfler les totaux."""
+    from reviewme.stats import enregistrer, resume
+
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "stats.json"
+        for _ in range(2):                        # même (PR, commit) deux fois
+            enregistrer(147, "abc123def456", "alice", "p", ["tech"],
+                        {"posted": 3, "deduped": 0, "dropped_low": 1}, 0.29, 120_000, 4.3,
+                        LOGGER, f)
+        enregistrer(148, "ff00aa11bb22", "bob", "p", ["tech", "i18n"],
+                    {"posted": 0, "deduped": 3}, 1.44, 90_000, 2.9, LOGGER, f)
+
+        brut = f.read_text(encoding="utf-8")
+        for interdit in ("summary", "pr_title", "message", "snippet"):
+            assert interdit not in brut, f"contenu de review dans les stats : {interdit}"
+
+        r = resume(f)
+        assert r["runs"] == 2 and r["prs"] == 2          # le rejeu n'a pas doublé
+        assert r["remarques_postees"] == 3
+        assert r["remarques_dedupliquees"] == 3          # ce qu'on a évité de reposter
+        assert r["cout_total_usd"] == 1.73
+        assert set(r["par_auteur"]) == {"alice", "bob"}
+
+
+def test_stats_illisibles_ne_bloquent_pas():
+    from reviewme.stats import enregistrer, resume
+
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "stats.json"
+        f.write_text("{ceci n'est pas du json", encoding="utf-8")
+        enregistrer(1, "a" * 12, "x", "p", [], {}, 0.0, 0, 0.0, LOGGER, f)
+        assert resume(f)["runs"] == 1               # reparti proprement
+
+
 # --------------------------------------------------------------- câblage du contexte
 
 def test_tous_les_blocs_de_contexte_arrivent_dans_le_prompt():

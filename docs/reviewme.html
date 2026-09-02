@@ -668,7 +668,27 @@ data/      state.json  reviews/  reviews.log   (gitignoré — hors OSS)</code><
     <tr><td class="wrap-first">VPS (poll/cron)</td><td>—</td><td>Cron/timer appelant le CLI one-shot</td></tr>
   </table></div>
 
-  <h3>Le moteur LLM</h3>
+  <h3>Historique sur un runner éphémère</h3>
+  <p>Un runner de CI repart de zéro à chaque build : pas de statistiques cumulées, et une relance sur le même commit repaie une review qui ne postera rien.</p>
+  <p>Le moteur écrit deux choses dans <code>data/</code> :</p>
+  <div class="card twrap"><table>
+    <tr><th>Fichier</th><th>Contenu</th><th>Transportable ?</th></tr>
+    <tr><td class="wrap-first"><code>data/stats.json</code></td><td><b>Compteurs seuls</b> : coût, remarques postées, dédupliquées, écartées, par auteur. Aucun titre, aucun message, aucun extrait de code.</td><td><span class="chip c-ok">Oui</span> c'est ce qu'on met en cache</td></tr>
+    <tr><td class="wrap-first"><code>data/reviews/</code></td><td>Le détail d'une review, <b>résumé du modèle inclus</b></td><td><span class="chip c-ko">Non</span> contenu de PR réelles</td></tr>
+  </table></div>
+  <pre><code># Bitrise : deux steps autour de la review
+- restore-cache@2:
+    inputs: [key: reviewme-ios-history]
+- script@1: { ... }
+- save-cache@1:
+    is_always_run: true        # même si la review échoue : les compteurs comptent
+    inputs:
+      - key: reviewme-ios-history
+      - paths: $HOME/reviewme-data</code></pre>
+  <p>Les statistiques sont <b>idempotentes par (PR, commit)</b> : rejouer un build ne gonfle pas les totaux. Le dashboard les sert sur <code>/api/stats</code>, y compris quand le détail des reviews est absent.</p>
+  <div class="warnbox"><span class="chip c-ko">Le cache n'est pas un stockage</span> Il s'évince et il est scopé par clé. Pour des compteurs, une perte coûte un trou dans l'historique. Pour autre chose, prévoir un vrai store.</div>
+
+    <h3>Le moteur LLM</h3>
   <div class="card twrap"><table>
     <tr><th>Besoin</th><th>Comment</th></tr>
     <tr><td class="wrap-first"><b>Passerelle d'entreprise</b></td><td><span class="chip c-ok">Validé en CI</span> <code>ANTHROPIC_BASE_URL</code> + <code>ANTHROPIC_AUTH_TOKEN</code> dans l'environnement, hérités par <code>claude -p</code>. <b>Rien à coder.</b><br>Ajouter <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1</code> : les proxies rejettent souvent les en-têtes de prompt caching.</td></tr>

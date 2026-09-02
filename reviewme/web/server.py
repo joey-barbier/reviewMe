@@ -77,6 +77,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._json(self._get_state())
         elif parsed.path == "/api/reviews":
             self._json(self._get_reviews())
+        elif parsed.path == "/api/stats":
+            # Compteurs agrégés : seule source disponible quand les reviews détaillées
+            # ne sont pas là (runner de CI, historique transporté par un cache).
+            from ..stats import resume
+            self._json(resume())
         elif parsed.path == "/api/logs":
             self._json(self._get_logs())
         elif parsed.path == "/api/hall-of-fame":
