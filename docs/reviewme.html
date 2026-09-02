@@ -389,7 +389,12 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
   <p>« La clé <code>checkout.title</code> manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde le jugement : variables non substituées, pluriels, longueur, ton.</p>
   <p>Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
 
-<h2>Plugins</h2>
+<h2>Pas de sous-agents</h2>
+  <p>Un reviewer ne peut pas déléguer à des sous-agents, et l'outil <code>Task</code> n'est pas dans l'allowlist. Ce n'est pas un oubli.</p>
+  <div class="warnbox"><span class="chip c-ko">Vérifié</span> Un sous-agent <b>n'hérite pas</b> de l'allowlist de son parent : il utilise les outils de sa propre définition. Un parent restreint à <code>Read,Glob,Grep</code> a pu exécuter <code>whoami</code> via un sous-agent déclarant <code>Bash</code>. Comme la configuration d'un reviewer peut venir du dépôt reviewé — donc d'une Pull Request — ce serait rouvrir l'exécution de code arbitraire.</div>
+  <p><b>Pour faire varier le modèle selon la tâche</b>, l'équivalent existe déjà et coûte moins cher : créer un reviewer de plus avec son propre <code>model</code>. C'est déclaratif, le nombre est borné, chaque exécution a son budget, et tout passe par l'allowlist du moteur.</p>
+
+  <h2>Plugins</h2>
   <p>Un reviewer peut avoir besoin de <b>skills ou d'agents</b> qui ne vivent pas dans ReviewMe — outillage maison, analyse spécialisée. Il les déclare, le moteur les installe avant la review :</p>
   <pre><code># reviewer.toml
 [plugins]

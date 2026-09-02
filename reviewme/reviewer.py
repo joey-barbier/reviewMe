@@ -28,6 +28,13 @@ from .projects import ReviewerSpec, load_output_contract, resolve_project
 # `git show <sha>:<path>` (lecture arbitraire du repo). La mitigation REQUISE est le sandbox de
 # déploiement (pas de réseau sortant + FS confiné au clone cible), cf. doc §Sécurité.
 _ALLOWED_TOOLS = "Read,Glob,Grep,Bash(git log:*),Bash(git show:*),Bash(git diff:*)"
+# ⚠️ NE PAS y ajouter `Task`, et ne pas passer `--agents` à la CLI. Vérifié : un sous-agent
+# n'hérite PAS de cette allowlist — il utilise les outils déclarés dans sa propre
+# définition. Un parent restreint à `Read,Glob,Grep` a pu exécuter `whoami` via un
+# sous-agent déclarant `tools: ["Bash"]`. Comme la configuration d'un reviewer peut venir
+# du dépôt reviewé (donc d'une Pull Request), ce serait rouvrir l'exécution de code
+# arbitraire que `_load_instance_env` et le confinement du precheck ont fermée.
+# Pour faire varier le modèle selon la tâche : créer un reviewer de plus avec son `model`.
 _TIMEOUT_S = 900
 
 
