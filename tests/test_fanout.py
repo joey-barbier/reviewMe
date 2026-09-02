@@ -423,7 +423,9 @@ def test_historique_donne_les_reponses_humaines_a_l_agent():
                  "body": "Question d'un humain, sans marqueur", "user": {"login": "bob"}},
             ]
 
-    bloc = build_history_context(_GH(), 7, LOGGER)
+    mesures: dict = {}
+    bloc = build_history_context(_GH(), 7, LOGGER, mesures)
+    assert mesures == {"remarques_ouvertes": 1, "remarques_avec_reponse": 1}
     assert "a.swift:10" in bloc                       # la remarque déjà postée
     assert "alice" in bloc and "Volontaire" in bloc    # la réponse humaine
     assert "Question d'un humain" not in bloc          # les fils purement humains sont hors sujet

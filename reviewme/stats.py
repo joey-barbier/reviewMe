@@ -62,6 +62,9 @@ def enregistrer(pr_number: int, head_sha: str, auteur: str, projet: str,
         "hors_diff": counts.get("out_of_diff", 0),
         "plafonnes": counts.get("capped", 0),
         "reponses": counts.get("replied", 0),
+        # Engagement : combien des remarques encore ouvertes ont reçu une réponse humaine.
+        "remarques_ouvertes": counts.get("remarques_ouvertes", 0),
+        "remarques_avec_reponse": counts.get("remarques_avec_reponse", 0),
     })
     if len(data["runs"]) > MAX_ENTREES:
         data["runs"] = data["runs"][-MAX_ENTREES:]
@@ -99,6 +102,8 @@ def resume(chemin: Path | None = None) -> dict:
         "remarques_dedupliquees": dedup,          # ce qu'on a évité de reposter
         "remarques_sous_seuil": sum(r.get("sous_seuil", 0) for r in runs),
         "reponses_dans_threads": sum(r.get("reponses", 0) for r in runs),
+        "remarques_avec_reponse": max((r.get("remarques_avec_reponse", 0) for r in runs), default=0),
+        "remarques_ouvertes": max((r.get("remarques_ouvertes", 0) for r in runs), default=0),
         "cout_total_usd": round(cout, 2),
         "cout_moyen_par_pr": round(cout / len(prs), 3) if prs else 0,
         "remarques_par_pr": round(postes / len(prs), 1) if prs else 0,

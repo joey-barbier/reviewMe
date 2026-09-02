@@ -155,7 +155,8 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
                     pr_number, diff_size_kb, project.name, [s.id for s in selected])
 
         # --- Exécution parallèle (D5) : chaque reviewer est un subprocess indépendant ---
-        historique = build_history_context(gh, pr_number, logger)
+        engagement: dict = {}
+        historique = build_history_context(gh, pr_number, logger, engagement)
 
         outcomes: list[tuple[ReviewerSpec, object]] = []
         if len(selected) == 1:
@@ -196,6 +197,7 @@ def run_review(pr: dict, config: Config, gh: GitHubClient, logger: logging.Logge
         ]
         counts = post_all(pr, config, gh, prepared, logger)
         counts["cost_usd"] = round(total_cost, 4)
+        counts.update(engagement)
 
         findings_total = sum(len(r.findings) for _, r in outcomes)
         save_review(pr_number, {

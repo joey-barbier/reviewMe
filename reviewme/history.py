@@ -26,8 +26,14 @@ def _nettoyer(texte: str) -> str:
     return _MARKER_RE.sub("", texte or "").strip()[:MAX_CAR_MESSAGE]
 
 
-def build_history_context(gh, pr_number: int, logger: logging.Logger) -> str:
-    """Fils de discussion de la PR, ou "" s'il n'y en a pas encore."""
+def build_history_context(gh, pr_number: int, logger: logging.Logger,
+                          mesures: dict | None = None) -> str:
+    """Fils de discussion de la PR, ou "" s'il n'y en a pas encore.
+
+    `mesures` reçoit, s'il est fourni, le nombre de remarques du bot et celles auxquelles
+    un humain a répondu. C'est le signal d'engagement : des remarques auxquelles personne
+    ne répond jamais sont, au mieux, ignorées.
+    """
     try:
         commentaires = gh.list_review_comments(pr_number)
     except Exception as e:
@@ -47,6 +53,10 @@ def build_history_context(gh, pr_number: int, logger: logging.Logger) -> str:
         if marker_key(racine.get("body", "")) is None:
             continue                                    # commentaire purement humain
         fils.append((racine, reponses.get(cid, [])))
+
+    if mesures is not None:
+        mesures["remarques_ouvertes"] = len(fils)
+        mesures["remarques_avec_reponse"] = sum(1 for _, rep in fils if rep)
 
     if not fils:
         return ""

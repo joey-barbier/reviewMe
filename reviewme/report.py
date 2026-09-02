@@ -50,6 +50,18 @@ td{padding:7px 10px;border-bottom:1px solid #DDD3CC;font-variant-numeric:tabular
 """ % {"fond": FOND, "encre": ENCRE, "muet": MUET, "carte": CARTE}
 
 
+def _taux(r: dict) -> str:
+    """Part des remarques encore ouvertes auxquelles un développeur a répondu.
+
+    C'est le signal d'engagement : des remarques auxquelles personne ne répond jamais
+    sont, au mieux, ignorées — au pire, du bruit qu'on finit par couper.
+    """
+    ouvertes = r.get("remarques_ouvertes", 0)
+    if not ouvertes:
+        return "—"
+    return f'{round(100 * r.get("remarques_avec_reponse", 0) / ouvertes)} %'
+
+
 def _tuile(valeur: str, label: str) -> str:
     return f'<div class="tile"><div class="n">{valeur}</div><div class="l">{html.escape(label)}</div></div>'
 
@@ -125,6 +137,7 @@ def generer(chemin_stats: Path | None = None) -> str:
             _tuile(f'{r["cout_total_usd"]:.2f} $', "coût total"),
             _tuile(f'{r["cout_moyen_par_pr"]:.2f} $', "coût par PR"),
             _tuile(str(r["remarques_par_pr"]), "remarques par PR"),
+            _tuile(_taux(r), "remarques ayant reçu une réponse"),
         ])
 
         par_pr: dict[int, float] = {}
