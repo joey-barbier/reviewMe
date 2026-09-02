@@ -275,6 +275,31 @@ def test_id_de_reviewer_libre():
         assert sorted(r.id for r in P.load_project("p", root).reviewers) == ["perf", "securite-mobile"]
 
 
+def test_inline_et_global_sont_comptes_separement():
+    """Un commentaire global se lisait « 1 inline » alors qu'aucun finding n'était passé."""
+    from reviewme.reconciler import post_all
+
+    class _GH:
+        def __init__(self):
+            self.globaux = 0
+        def create_review(self, *a, **k):
+            raise AssertionError("aucun inline ne devait être posté")
+        def post_issue_comment(self, pr, body):
+            self.globaux += 1
+        def update_issue_comment(self, cid, body):
+            self.globaux += 1
+
+    # un reviewer `global` qui ne trouve rien poste quand même son commentaire de synthèse
+    prep = prepare(PR, _config(), _ctx(), _result([]), LOGGER, "us", output_mode="global")
+    gh = _GH()
+    totaux = post_all(PR, _config(), gh, [prep], LOGGER)
+
+    assert gh.globaux == 1
+    assert totaux["posted_global"] == 1
+    assert totaux["posted_inline"] == 0        # c'est la distinction qui manquait
+    assert totaux["posted"] == 1               # le total reste juste
+
+
 # --------------------------------------------------------------- statistiques
 
 def test_stats_sans_contenu_et_idempotentes():

@@ -297,8 +297,11 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
     """SEUL point d'écriture GitHub (ADR v3 D5). Applique le plafond D6 puis poste."""
     pr_number = pr["number"]
     head_sha = pr["head"]["sha"]
-    totals = {"posted": 0, "replied": 0, "deduped": 0, "out_of_diff": 0, "invalid": 0,
-              "dropped_low": 0, "capped": 0, "fallback": False, "reviewers": len(prepared)}
+    # `posted` reste le total (compatibilité), mais on distingue la nature : sans ça, un
+    # unique commentaire global se lisait « 1 inline » alors qu'aucun finding n'était passé.
+    totals = {"posted": 0, "posted_inline": 0, "posted_global": 0, "replied": 0,
+              "deduped": 0, "out_of_diff": 0, "invalid": 0, "dropped_low": 0,
+              "capped": 0, "fallback": False, "reviewers": len(prepared)}
     for p in prepared:
         for k in ("deduped", "out_of_diff", "invalid", "dropped_low", "capped"):
             totals[k] += p.counts.get(k, 0)
@@ -314,8 +317,8 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
     if config.dry_run:
         # En dry-run, AFFICHER ce qui serait posté : c'est tout l'intérêt du mode, sans quoi
         # on ne peut ni juger la pertinence ni calibrer le seuil de confiance.
-        logger.info("PR #%s [DRY-RUN] : %d inline, %d réponses, %d global, %s",
-                    pr_number, len(batch), len(replies), len(globals_), totals)
+        logger.info("PR #%s [DRY-RUN] : %d inline, %d global, %d réponses",
+                    pr_number, len(batch), len(globals_), len(replies))
         for c in batch:
             body = _MARKER_RE.sub("", c["body"]).replace("\n", " ").strip()
             logger.info("  [%s] %s:%s (confiance %s) — %s",
@@ -326,7 +329,8 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
                 logger.info("  [%s] commentaire global :\n%s", p.reviewer_id, extrait[:1500])
             elif p.summary and p.output_mode != "global":
                 logger.info("  [%s] résumé :\n%s", p.reviewer_id, p.summary[:1000])
-        totals["posted"] = len(batch)
+        totals["posted"] = totals["posted_inline"] = len(batch)
+        totals["posted_global"] = len(globals_)
         return totals
 
     # --- Post inline : UN seul write pour tous les reviewers (limite 80 créations/min) ---
@@ -334,6 +338,7 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
         api_batch = [_api_comment(c) for c in batch]
         try:
             gh.create_review(pr_number, head_sha, summary_body, api_batch, event="COMMENT")
+            totals["posted_inline"] = len(api_batch)
             totals["posted"] = len(api_batch)
         except GitHubApiError as e:
             if e.status_code == 422:
@@ -357,6 +362,7 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
                 gh.update_issue_comment(p.global_update_id, body)
             else:
                 gh.post_issue_comment(pr_number, body)
+            totals["posted_global"] += 1
             totals["posted"] += 1
         except GitHubApiError:
             logger.warning("PR #%s [%s] : échec du commentaire global", pr_number, p.reviewer_id)
@@ -369,9 +375,11 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
         except GitHubApiError:
             logger.warning("PR #%s : échec réponse thread %s", pr_number, cid)
 
-    logger.info("PR #%s : %d inline, %d réponses, %d dédup, %d hors-diff, %d sous-seuil, %d plafonnés",
-                pr_number, totals["posted"], totals["replied"], totals["deduped"],
-                totals["out_of_diff"], totals["dropped_low"], totals["capped"])
+    logger.info("PR #%s : %d inline, %d global, %d réponses, %d dédup, %d hors-diff, "
+                "%d sous-seuil, %d plafonnés",
+                pr_number, totals["posted_inline"], totals["posted_global"], totals["replied"],
+                totals["deduped"], totals["out_of_diff"], totals["dropped_low"],
+                totals["capped"])
     return totals
 
 
