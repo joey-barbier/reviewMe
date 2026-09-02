@@ -13,6 +13,7 @@ import argparse
 import dataclasses
 import shutil
 import sys
+from pathlib import Path
 
 from .config import load_config
 from .logging_ import setup_logging
@@ -38,6 +39,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
                     help="Reviewers à copier, séparés par des virgules (défaut : tech)")
 
     sub.add_parser("projects", help="Liste les projets configurés et leurs reviewers")
+
+    st = sub.add_parser("stats", help="Statistiques agrégées (compteurs, sans contenu)")
+    st.add_argument("--html", metavar="FICHIER",
+                    help="Écrit un rapport HTML autonome au lieu d'afficher le résumé")
+    st.add_argument("--json", action="store_true", help="Sortie JSON brute")
     return parser.parse_args(argv)
 
 
@@ -104,6 +110,33 @@ def _list_projects() -> int:
     return 0
 
 
+def _stats(args) -> int:
+    import json
+
+    from .report import ecrire
+    from .stats import resume
+
+    if args.html:
+        chemin = ecrire(Path(args.html))
+        print(f"Rapport écrit : {chemin}")
+        return 0
+
+    r = resume()
+    if args.json:
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+        return 0
+
+    if not r.get("runs"):
+        print("Aucune review enregistrée.")
+        return 0
+    print(f"{r['runs']} run(s) sur {r['prs']} PR")
+    print(f"  remarques postées      : {r['remarques_postees']}")
+    print(f"  évitées (dédup+seuil)  : {r['remarques_dedupliquees'] + r['remarques_sous_seuil']}")
+    print(f"  coût total             : {r['cout_total_usd']:.2f} $")
+    print(f"  coût moyen par PR      : {r['cout_moyen_par_pr']:.2f} $")
+    return 0
+
+
 def main() -> None:
     args = _parse_args(sys.argv[1:])
 
@@ -111,6 +144,8 @@ def main() -> None:
         raise SystemExit(_init_project(args.name, [r.strip() for r in args.reviewers.split(",") if r.strip()]))
     if args.command == "projects":
         raise SystemExit(_list_projects())
+    if args.command == "stats":
+        raise SystemExit(_stats(args))
 
     if args.pr is None:
         print("Usage : reviewme review --repo OWNER/REPO --pr N [--dry-run] [--force]", file=sys.stderr)

@@ -313,6 +313,24 @@ def test_stats_illisibles_ne_bloquent_pas():
         assert resume(f)["runs"] == 1               # reparti proprement
 
 
+def test_rapport_html_autonome_et_sans_contenu():
+    """La page circule : aucune requête réseau, et aucun contenu de PR dedans."""
+    from reviewme.report import generer
+    from reviewme.stats import enregistrer
+
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "stats.json"
+        enregistrer(147, "abc123def456", "alice", "p", ["tech"],
+                    {"posted": 3, "deduped": 2, "dropped_low": 1}, 0.29, 120_000, 4.3, LOGGER, f)
+        page = generer(f)
+
+    assert page.startswith("<!doctype html>")
+    for externe in ("http://", "https://", "<script"):
+        assert externe not in page, f"la page n'est pas autonome : {externe}"
+    assert "alice" in page and "0.29" in page          # les compteurs y sont
+    assert "#7C3AED" in page                            # palette validée par le script du skill
+
+
 # --------------------------------------------------------------- câblage du contexte
 
 def test_tous_les_blocs_de_contexte_arrivent_dans_le_prompt():
