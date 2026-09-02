@@ -92,6 +92,19 @@ def _build_prompt(pr_number: int, pr_title: str, diff_path: str, config: Config,
     )
 
 
+def _mcp_config_path(spec: ReviewerSpec) -> Path | None:
+    """Fichier de config MCP du reviewer, ou None. Refuse toute échappée du dossier."""
+    if not spec.mcp_config or spec.directory is None:
+        return None
+    base = spec.directory.resolve()
+    try:
+        chemin = (base / spec.mcp_config).resolve()
+        chemin.relative_to(base)
+    except (ValueError, OSError):
+        return None
+    return chemin if chemin.is_file() else None
+
+
 def pick_model(spec: ReviewerSpec) -> str:
     """Modèle à utiliser pour ce reviewer, ou "" pour laisser la CLI décider.
 
@@ -132,6 +145,12 @@ def run_review(pr_number: int, pr_title: str, pr_diff: str, config: Config,
         model = pick_model(spec)
         if model:
             cmd.extend(["--model", model])
+        # Serveurs MCP déclarés par le reviewer (documentation de bibliothèques, outillage
+        # interne). Chemin CONFINÉ à son dossier : une config peut venir d'un dépôt tiers.
+        mcp = _mcp_config_path(spec)
+        if mcp:
+            cmd.extend(["--mcp-config", str(mcp)])
+
         budget = spec.budget(config)
         if budget > 0:
             cmd.extend(["--max-budget-usd", str(budget)])

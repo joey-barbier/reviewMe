@@ -422,6 +422,23 @@ def test_historique_absent_ne_bloque_pas():
     assert build_history_context(_Casse(), 1, LOGGER) == ""
 
 
+def test_mcp_config_confinee_au_dossier_du_reviewer():
+    """Une config peut venir d'une PR : elle ne doit pas pouvoir désigner un fichier
+    quelconque du dépôt comme configuration de serveurs MCP."""
+    from reviewme.reviewer import _mcp_config_path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp) / "reviewers" / "tech"
+        base.mkdir(parents=True)
+        (base / "mcp.json").write_text("{}", encoding="utf-8")
+        (Path(tmp) / "ailleurs.json").write_text("{}", encoding="utf-8")
+
+        assert _mcp_config_path(_spec("tech", mcp_config="mcp.json", directory=base)) is not None
+        assert _mcp_config_path(_spec("tech", mcp_config="../../ailleurs.json", directory=base)) is None
+        assert _mcp_config_path(_spec("tech", mcp_config="absent.json", directory=base)) is None
+        assert _mcp_config_path(_spec("tech")) is None
+
+
 # --------------------------------------------------------------- config non fiable
 
 def test_env_dinstance_ne_peut_pas_choisir_le_binaire_execute():

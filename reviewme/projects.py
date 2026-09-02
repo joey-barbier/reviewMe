@@ -79,6 +79,8 @@ class ReviewerSpec:
     max_budget_usd: float | None = None    # None = budget global de la Config
     model: str = ""                        # modèle LLM de CE reviewer. Vide = CLAUDE_MODEL,
                                            # sinon le défaut de la CLI.
+    mcp_config: str = ""                   # fichier de config MCP, confiné au dossier du
+                                           # reviewer (doc de bibliothèques, outillage…)
     precheck: str = ""                     # script déterministe optionnel (D7)
     common: str = ""                       # consignes communes du projet (langue, ton, format)
     directory: Path | None = None          # dossier du reviewer (résolution du precheck)
@@ -176,6 +178,7 @@ def _load_reviewer(project_name: str, project_dir: Path, reviewer_id: str,
         priority=int(data.get("priority", 100)),
         max_budget_usd=float(budget) if budget is not None else None,
         model=str(data.get("model", "")),
+        mcp_config=str((data.get("mcp", {}) or {}).get("config", "")),
         precheck=str(data.get("precheck", "")),
         common=common,
         directory=rdir,

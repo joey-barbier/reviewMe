@@ -435,6 +435,7 @@ install      = ["mon-plugin"]               # ou "mon-plugin@marketplace"</code>
     <tr><td class="wrap-first"><code>precheck</code></td><td>chemin</td><td>vide</td><td>Script déterministe, <b>confiné au dossier du reviewer</b>. Reçoit le dépôt via <code>--repo</code> et <b>le diff sur stdin</b> ; sa sortie devient des faits établis</td></tr>
     <tr><td class="wrap-first"><code>[when] paths</code></td><td>liste de globs</td><td>vide = tourne toujours</td><td>Ne se déclenche que si le diff touche l'un de ces chemins</td></tr>
     <tr><td class="wrap-first"><code>[context] read</code></td><td>liste de chemins</td><td>vide</td><td>Conventions lues dans le dépôt reviewé. Fichier = injecté, dossier = inventaire</td></tr>
+    <tr><td class="wrap-first"><code>[mcp] config</code></td><td>chemin</td><td>vide</td><td>Fichier de config de serveurs MCP, <b>confiné au dossier du reviewer</b> — par exemple la documentation à jour des bibliothèques tierces</td></tr>
     <tr><td class="wrap-first"><code>[plugins] marketplaces</code></td><td>liste</td><td>vide</td><td>Marketplaces Claude Code à déclarer avant installation</td></tr>
     <tr><td class="wrap-first"><code>[plugins] install</code></td><td>liste</td><td>vide</td><td>Plugins à installer avant la review (idempotent)</td></tr>
   </table></div>
