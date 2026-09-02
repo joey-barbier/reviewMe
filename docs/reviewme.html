@@ -574,6 +574,17 @@ cd config && ./reviewme review --pr "$PR_NUMBER"</code></pre>
 
   <div class="warnbox"><span class="chip c-ko">Piège</span> <code>REVIEWER_ID</code> doit rester <b>stable dans le temps</b> pour un projet donné : le renommer rend orphelins tous les commentaires déjà postés, qui seront alors <b>reposés en double</b>. Même règle que pour le hash.</div>
 
+  <h2>4 · Sur un nouveau commit</h2>
+  <div class="card twrap"><table>
+    <tr><th>Situation</th><th>Ce que fait le bot</th></tr>
+    <tr><td class="wrap-first">Le problème est là, la ligne n'a pas bougé</td><td><span class="chip c-mut">dédup</span> rien de posté, rien de dit</td></tr>
+    <tr><td class="wrap-first">Le problème est là, la ligne a bougé</td><td><span class="chip c-info">réponse</span> dans le thread existant — jamais un nouveau commentaire</td></tr>
+    <tr><td class="wrap-first">Le problème a disparu et la ligne a changé</td><td><span class="chip c-ok">réponse</span> « ce point n'apparaît plus — corrigé »</td></tr>
+    <tr><td class="wrap-first">Le problème a disparu mais la ligne est identique</td><td><span class="chip c-mut">silence</span> on ne conclut rien</td></tr>
+  </table></div>
+  <p>La dernière ligne est le garde-fou : un modèle qui varie d'un run à l'autre suffirait sinon à annoncer une correction imaginaire. On ne conclut qu'une chose vérifiable — GitHub a marqué le commentaire obsolète, donc la ligne a réellement changé.</p>
+  <p>Un reviewer ne répond que dans <b>ses</b> threads : le marqueur porte son identité.</p>
+
   <h2>4 · Ce que l'agent sait de la PR</h2>
   <p>À chaque review, l'agent reçoit <b>ses remarques précédentes et les réponses humaines</b> — pas seulement le diff.</p>
   <div class="card twrap"><table>

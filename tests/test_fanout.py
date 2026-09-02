@@ -300,6 +300,66 @@ def test_inline_et_global_sont_comptes_separement():
     assert totaux["posted"] == 1               # le total reste juste
 
 
+# --------------------------------------------------------------- cycle de vie sur un nouveau commit
+
+def _commentaire_existant(ctx, finding, reviewer="tech", position=3, cid=1):
+    """Simule un commentaire déjà posté par le bot sur ce finding."""
+    from reviewme.reconciler import fingerprint_hash
+    ctx.inline_by_marker[(reviewer, fingerprint_hash(finding.path, "let x = y!"))] = {
+        "id": cid, "position": position, "path": finding.path, "line": finding.line,
+        "body": "**[BLOCKER]** Souci ici", "user": {"login": "bot"},
+    }
+
+
+def test_nouveau_commit_probleme_toujours_la_ligne_inchangee():
+    """Cas 1 : rien ne bouge → dédup, aucun nouveau commentaire, aucun bruit."""
+    ctx = _ctx()
+    f = _finding()
+    _commentaire_existant(ctx, f, position=3)
+    prep = prepare(PR, _config(), ctx, _result([f]), LOGGER, "tech")
+    assert prep.batch == [] and prep.replies == []
+    assert prep.counts["deduped"] == 1 and prep.counts["resolus"] == 0
+
+
+def test_nouveau_commit_probleme_toujours_la_ligne_deplacee():
+    """Cas 2 : la ligne a bougé mais le problème demeure → réponse dans le thread,
+    jamais un nouveau commentaire top-level (sinon la PR se remplit de doublons)."""
+    ctx = _ctx()
+    f = _finding()
+    _commentaire_existant(ctx, f, position=None)      # GitHub a marqué le commentaire obsolète
+    prep = prepare(PR, _config(), ctx, _result([f]), LOGGER, "tech")
+    assert prep.batch == []
+    assert len(prep.replies) == 1
+    assert "Toujours d'actualité" in prep.replies[0][1]
+    assert prep.counts["resolus"] == 0
+
+
+def test_nouveau_commit_probleme_corrige():
+    """Cas 3 : la ligne a changé ET le finding a disparu → on répond que c'est réglé."""
+    ctx = _ctx()
+    _commentaire_existant(ctx, _finding(), position=None)
+    prep = prepare(PR, _config(), ctx, _result([]), LOGGER, "tech")   # plus aucun finding
+    assert len(prep.replies) == 1
+    assert "n'apparaît plus" in prep.replies[0][1]
+    assert prep.counts["resolus"] == 1
+
+
+def test_finding_disparu_mais_ligne_inchangee_ne_conclut_rien():
+    """Garde-fou : un modèle qui varie d'un run à l'autre ne doit pas annoncer une
+    correction imaginaire. Sans changement de la ligne, on se tait."""
+    ctx = _ctx()
+    _commentaire_existant(ctx, _finding(), position=3)   # la ligne n'a PAS bougé
+    prep = prepare(PR, _config(), ctx, _result([]), LOGGER, "tech")
+    assert prep.replies == [] and prep.counts["resolus"] == 0
+
+
+def test_un_autre_reviewer_ne_cloture_pas_les_remarques_du_premier():
+    ctx = _ctx()
+    _commentaire_existant(ctx, _finding(), reviewer="tech", position=None)
+    prep = prepare(PR, _config(), ctx, _result([]), LOGGER, "architect")
+    assert prep.replies == [] and prep.counts["resolus"] == 0
+
+
 # --------------------------------------------------------------- statistiques
 
 def test_stats_sans_contenu_et_idempotentes():

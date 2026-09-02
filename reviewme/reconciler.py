@@ -190,6 +190,7 @@ class PreparedReview:
     replies: list[tuple[int, str]] = field(default_factory=list)
     global_body: str | None = None          # mode `global`, ou fallback JSON illisible
     global_update_id: int | None = None     # commentaire global existant à mettre à jour
+    threads_resolus: set = field(default_factory=set)   # évite de répondre deux fois
     counts: dict = field(default_factory=dict)
 
 
@@ -200,7 +201,7 @@ def prepare(pr: dict, config: Config, ctx: PrContext, result: ReviewResult,
     pr_number = pr["number"]
     head_sha = pr["head"]["sha"]
     counts = {"posted": 0, "replied": 0, "deduped": 0, "out_of_diff": 0,
-              "invalid": 0, "dropped_low": 0, "capped": 0, "fallback": False}
+              "invalid": 0, "dropped_low": 0, "capped": 0, "resolus": 0, "fallback": False}
     prep = PreparedReview(reviewer_id=reviewer_id, output_mode=output_mode, counts=counts)
 
     # --- Repli : JSON inexploitable -> commentaire global ---
@@ -263,6 +264,25 @@ def prepare(pr: dict, config: Config, ctx: PrContext, result: ReviewResult,
         else:
             counts["deduped"] += 1
 
+    # --- Points corrigés : le commentaire existe encore, le finding a disparu ---
+    # Sans ça, une remarque traitée reste ouverte indéfiniment et personne ne sait qu'elle
+    # l'est. On ne le déduit QUE si la ligne commentée a réellement changé
+    # (`position is None` = le commentaire est devenu obsolète côté GitHub) : sinon, un
+    # modèle qui varie d'un run à l'autre suffirait à annoncer une correction imaginaire.
+    reproduits = {fingerprint_hash(f.path, f.line_content) for f in inline}
+    for (rid, empreinte), commentaire in ctx.inline_by_marker.items():
+        if rid != reviewer_id or empreinte in reproduits:
+            continue
+        if commentaire.get("position") is not None:
+            continue                       # la ligne n'a pas bougé : on ne conclut rien
+        if commentaire.get("id") in prep.threads_resolus:
+            continue
+        prep.threads_resolus.add(commentaire["id"])
+        prep.replies.append((commentaire["id"],
+                             f"Ce point n'apparaît plus sur `{head_sha[:8]}` — corrigé "
+                             f"ou disparu du diff. {_SIGNATURE}"))
+        counts["resolus"] = counts.get("resolus", 0) + 1
+
     if counts["dropped_low"]:
         logger.info("PR #%s [%s] : %d finding(s) sous le seuil de confiance (%d) non postés",
                     pr_number, reviewer_id, counts["dropped_low"], config.confidence_threshold)
@@ -301,9 +321,9 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
     # unique commentaire global se lisait « 1 inline » alors qu'aucun finding n'était passé.
     totals = {"posted": 0, "posted_inline": 0, "posted_global": 0, "replied": 0,
               "deduped": 0, "out_of_diff": 0, "invalid": 0, "dropped_low": 0,
-              "capped": 0, "fallback": False, "reviewers": len(prepared)}
+              "capped": 0, "resolus": 0, "fallback": False, "reviewers": len(prepared)}
     for p in prepared:
-        for k in ("deduped", "out_of_diff", "invalid", "dropped_low", "capped"):
+        for k in ("deduped", "out_of_diff", "invalid", "dropped_low", "capped", "resolus"):
             totals[k] += p.counts.get(k, 0)
         totals["fallback"] = totals["fallback"] or p.counts.get("fallback", False)
 
@@ -376,10 +396,10 @@ def post_all(pr: dict, config: Config, gh: GitHubClient, prepared: list[Prepared
             logger.warning("PR #%s : échec réponse thread %s", pr_number, cid)
 
     logger.info("PR #%s : %d inline, %d global, %d réponses, %d dédup, %d hors-diff, "
-                "%d sous-seuil, %d plafonnés",
+                "%d sous-seuil, %d plafonnés, %d résolus",
                 pr_number, totals["posted_inline"], totals["posted_global"], totals["replied"],
                 totals["deduped"], totals["out_of_diff"], totals["dropped_low"],
-                totals["capped"])
+                totals["capped"], totals["resolus"])
     return totals
 
 
