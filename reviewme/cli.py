@@ -40,6 +40,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
     sub.add_parser("projects", help="Liste les projets configurés et leurs reviewers")
 
+    fb = sub.add_parser("feedback",
+                        help="Retours de développeurs sur une PR, en règles à relire")
+    fb.add_argument("--pr", type=int, required=True, help="Numéro de la PR")
+    fb.add_argument("--repo", dest="fb_repo", help="OWNER/REPO (sinon GITHUB_REPO)")
+
     st = sub.add_parser("stats", help="Statistiques agrégées (compteurs, sans contenu)")
     st.add_argument("--html", metavar="FICHIER",
                     help="Écrit un rapport HTML autonome au lieu d'afficher le résumé")
@@ -110,6 +115,38 @@ def _list_projects() -> int:
     return 0
 
 
+def _feedback(args) -> int:
+    import dataclasses as _dc
+
+    from .feedback import collecter, en_regles
+    from .github_client import GitHubClient
+    from .logging_ import setup_logging
+
+    config = load_config(require_repo=False)
+    if args.fb_repo:
+        config = _dc.replace(config, github_repo=args.fb_repo)
+    if not config.github_repo:
+        print("Erreur : --repo requis (ou GITHUB_REPO dans .env)", file=sys.stderr)
+        return 2
+
+    logger = setup_logging()
+    gh = GitHubClient(config)
+    try:
+        echanges = collecter(gh, args.pr, logger)
+    finally:
+        gh.close()
+
+    if not echanges:
+        print(f"PR #{args.pr} : aucune remarque n'a reçu de réponse.")
+        return 0
+
+    print(f"PR #{args.pr} : {len(echanges)} réponse(s) de développeurs.\n")
+    print(en_regles(echanges, args.pr))
+    print("\n---\nÀ relire, puis coller dans `common/regles-terrain.md` du projet si la "
+          "règle vaut au-delà de cette PR.")
+    return 0
+
+
 def _stats(args) -> int:
     import json
 
@@ -146,6 +183,8 @@ def main() -> None:
         raise SystemExit(_list_projects())
     if args.command == "stats":
         raise SystemExit(_stats(args))
+    if args.command == "feedback":
+        raise SystemExit(_feedback(args))
 
     if args.pr is None:
         print("Usage : reviewme review --repo OWNER/REPO --pr N [--dry-run] [--force]", file=sys.stderr)

@@ -360,6 +360,37 @@ def test_un_autre_reviewer_ne_cloture_pas_les_remarques_du_premier():
     assert prep.replies == [] and prep.counts["resolus"] == 0
 
 
+def test_feedback_produit_des_regles_attribuees():
+    """Une règle sans auteur ne peut pas être contestée : l'attribution est le mécanisme."""
+    from reviewme.feedback import collecter, en_regles
+    from reviewme.reconciler import fingerprint
+
+    marqueur = fingerprint("a.swift", "let x = y!", "tech")
+
+    class _GH:
+        def list_review_comments(self, n):
+            return [
+                {"id": 1, "in_reply_to_id": None, "path": "a.swift", "line": 10,
+                 "body": f"**[BLOCKER]** Force-unwrap ici.\n{marqueur}", "user": {"login": "bot"}},
+                {"id": 2, "in_reply_to_id": 1,
+                 "body": "Toléré dans les tests, c'est notre convention.",
+                 "user": {"login": "alice"}},
+                {"id": 3, "in_reply_to_id": None, "path": "b.swift",
+                 "body": "discussion entre humains", "user": {"login": "bob"}},
+            ]
+
+    echanges = collecter(_GH(), 42, LOGGER)
+    assert len(echanges) == 1                      # le fil purement humain est ignoré
+    assert echanges[0]["auteur"] == "alice"
+    assert echanges[0]["reviewer"] == "tech"
+
+    regles = en_regles(echanges, 42)
+    assert "alice" in regles and "#42" in regles    # qui, et sur quelle PR
+    assert "a.swift" in regles
+    assert "À relire" in regles                     # proposé, pas décidé
+    assert marqueur not in regles
+
+
 # --------------------------------------------------------------- statistiques
 
 def test_stats_sans_contenu_et_idempotentes():

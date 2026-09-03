@@ -389,7 +389,23 @@ read = ["AGENTS.md", "documentations/CODING_STYLE.md", "documentations/"]</code>
   <p>« La clé <code>checkout.title</code> manque en <code>de</code> » est vérifiable — gratuit, instantané, sans faux positif. Le modèle garde le jugement : variables non substituées, pluriels, longueur, ton.</p>
   <p>Ne jamais payer un LLM pour ce qu'un <code>diff</code> fait mieux.</p>
 
-<h2>Pas de sous-agents</h2>
+<h2>Apprendre des retours, sans les absorber</h2>
+  <p>Le bot ne mémorise rien d'une PR à l'autre : un point rejeté hier revient demain. Il n'apprend pas tout seul non plus — une règle absorbée en silence le rendrait progressivement aveugle sans que personne ne sache pourquoi.</p>
+  <p>Le mécanisme est <b>l'attribution</b> : une règle porte son auteur, sa PR et sa date, donc elle reste contestable.</p>
+  <pre><code>reviewme feedback --pr 16974
+
+- **PanierView.swift** — le reviewer `tech` disait : « Force-unwrap sur une URL de l'API… »
+  **alice** a répondu (PR #42, 2026-01-15) : « L'API garantit ce champ par contrat. »</code></pre>
+  <p>Ces lignes sont <b>proposées</b>, pas décidées. Un humain les relit — une réponse ponctuelle n'est pas une règle — puis les colle dans <code>common/regles-terrain.md</code>, qui est injecté à tous les reviewers du projet.</p>
+  <div class="card twrap"><table>
+    <tr><th>Consigne donnée au reviewer</th><th>Pourquoi</th></tr>
+    <tr><td class="wrap-first">Applique ces règles, mais ce sont des avis, parfois contextuels</td><td>Elles viennent d'une PR précise, pas de la doc du projet</td></tr>
+    <tr><td class="wrap-first"><b>Quand tu te tais à cause d'une règle, cite-la</b></td><td>Sans la mention, personne ne peut la contester — et un autre développeur peut être en désaccord</td></tr>
+    <tr><td class="wrap-first">Si le code contredit franchement une règle, signale quand même et explique</td><td>La situation a pu changer, ou l'auteur parlait d'un autre cas</td></tr>
+  </table></div>
+  <p>Le fichier étant versionné, une règle se discute en pull request et s'annule d'un <code>git revert</code>.</p>
+
+  <h2>Pas de sous-agents</h2>
   <p>Un reviewer ne peut pas déléguer à des sous-agents, et l'outil <code>Task</code> n'est pas dans l'allowlist. Ce n'est pas un oubli.</p>
   <div class="warnbox"><span class="chip c-ko">Vérifié</span> Un sous-agent <b>n'hérite pas</b> de l'allowlist de son parent : il utilise les outils de sa propre définition. Un parent restreint à <code>Read,Glob,Grep</code> a pu exécuter <code>whoami</code> via un sous-agent déclarant <code>Bash</code>. Comme la configuration d'un reviewer peut venir du dépôt reviewé — donc d'une Pull Request — ce serait rouvrir l'exécution de code arbitraire.</div>
   <p><b>Pour faire varier le modèle selon la tâche</b>, l'équivalent existe déjà et coûte moins cher : créer un reviewer de plus avec son propre <code>model</code>. C'est déclaratif, le nombre est borné, chaque exécution a son budget, et tout passe par l'allowlist du moteur.</p>
