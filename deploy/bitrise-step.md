@@ -30,9 +30,9 @@ stack par défaut est macOS :
             #!/usr/bin/env bash
             set -eo pipefail        # PAS de `set -x` : ce step manipule des secrets
 
-            # 1. Outils
-            curl -fsSL https://claude.ai/install.sh | bash
-            curl -LsSf https://astral.sh/uv/install.sh | sh
+            # 1. Outils, en versions ÉPINGLÉES et vérifiées — ce job porte des secrets.
+            npm install -g "@anthropic-ai/claude-code@<version>"   # npm vérifie l'intégrité
+            # uv : archive de release + SHA256 publié par l'éditeur (voir bitrise-ah-ios.yml)
             export PATH="$HOME/.local/bin:$PATH"
             echo '{"hasCompletedOnboarding": true}' > ~/.claude.json
 
@@ -57,7 +57,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 
 # 2. Le moteur (dépôt public, aucun credential)
-git clone --quiet --depth 1 <url-du-moteur> /tmp/reviewme && cd /tmp/reviewme && uv sync
+# Épingler un COMMIT, pas une branche ni un tag : un tag est déplaçable.
+git clone --quiet --filter=blob:none --no-checkout <url-du-moteur> /tmp/reviewme
+git -C /tmp/reviewme checkout --quiet <sha-complet>
+cd /tmp/reviewme && uv sync --frozen
 
 # 3. La config vient du dépôt reviewé
 export REVIEWME_CONFIG_HOME="$BITRISE_SOURCE_DIR/.reviewme"
