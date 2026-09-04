@@ -24,7 +24,7 @@ from reviewme.reconciler import (
     marker_key,
 )
 
-PATH = "AppIos/App/Dashboard/AppDashboardInteractor.swift"
+PATH = "src/dashboard/DashboardService.swift"
 LINE = '        let authToken = "sk-live-XXXX"'
 
 
