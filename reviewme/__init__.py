@@ -12,6 +12,7 @@ Modules :
   history.py       fils de discussion de la PR, donnés à l'agent avant qu'il juge
   stats.py         compteurs agrégés, sans contenu (transportables par un cache CI)
   feedback.py      retours des développeurs -> règles attribuées, à relire
+  report.py        rapport HTML autonome des statistiques
   context/         fournisseurs de contexte externe optionnels (jira.py)
   github_auth.py   PAT ou GitHub App (JWT RS256 -> token d'installation renouvelé)
   run.py           run_review(repo, pr, config) : la fonction commune à toutes les entrées

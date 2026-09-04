@@ -325,6 +325,8 @@ export REVIEWME_CONFIG_HOME=$PWD
     <tr><td class="wrap-first"><code>reviewme-web [port]</code></td><td>Dashboard read-only (Hall of Fame, coûts) sur <code>127.0.0.1:8420</code>.</td></tr>
     <tr><td class="wrap-first"><code>reviewme init-project &lt;repo&gt; --reviewers tech,us,i18n</code></td><td>Crée <code>config/projects/&lt;repo&gt;/</code> depuis le squelette (cf. Reviewers &amp; projets).</td></tr>
     <tr><td class="wrap-first"><code>reviewme projects</code></td><td>Liste les projets configurés, leurs reviewers, leur mode et leur déclencheur.</td></tr>
+    <tr><td class="wrap-first"><code>reviewme stats</code></td><td>Compteurs agrégés : coût, remarques postées, évitées, par auteur. <code>--json</code> pour la sortie brute, <code>--html &lt;fichier&gt;</code> pour un rapport autonome et publiable.</td></tr>
+    <tr><td class="wrap-first"><code>reviewme feedback --pr N</code></td><td>Réponses des développeurs sur une PR, proposées en règles attribuées à relire.</td></tr>
   </table></div>
 
   <pre><code># Exemple typique en CI / cron

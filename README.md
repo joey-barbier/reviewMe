@@ -8,6 +8,7 @@ des critères d'acceptation, traductions — chacun avec ses entrées et son for
 Quatre points d'entrée : CLI one-shot, webhook, poll, ou CI (GitHub Actions / Bitrise).
 
 📖 **Documentation complète : [`docs/reviewme.html`](docs/reviewme.html)**
+🧭 Limites connues et reste à faire : [`ROADMAP.md`](ROADMAP.md)
 
 ---
 
@@ -194,6 +195,8 @@ PR ──► sélection des reviewers (activés par le projet, déclenchés par 
 | `reviewme review --repo O/R --pr N` | Review one-shot. `--dry-run`, `--force` |
 | `reviewme projects` | Liste les projets de l'instance et leurs reviewers |
 | `reviewme init-project <repo> --reviewers tech,us` | Crée un projet depuis le squelette |
+| `reviewme stats [--json\|--html <fichier>]` | Compteurs agrégés, ou rapport HTML autonome |
+| `reviewme feedback --pr N` | Retours des développeurs, en règles attribuées à relire |
 | `reviewme-poll` | Boucle de poll (VPS) |
 | `reviewme-webhook` | Serveur webhook GitHub (HMAC obligatoire) |
 | `reviewme-web` | Dashboard read-only sur `127.0.0.1:8420` |
